@@ -136,7 +136,6 @@ actions:
   - action_delete_start_date
   - action_delete_end_date
   - action_delete_menstrual_cycle
-  - action_delete_logs
 
 intents:
   - greet
@@ -264,7 +263,6 @@ intents:
   - inform_symptoms
   - show_cycles
   - delete_log_menstrual_cycle
-  - delete_symptoms
 
 entities:
   - start_dates
@@ -437,7 +435,7 @@ responses:
     - text: "What procedures will a doctor use to address itchy testicles? The following steps are:\n1. Pre-Exam Discussion\n2. Getting Ready\n3. Positioning\n4. The Exam\n5. Checking the Prostate\n6. Finishing Up"
 
   utter_pre_exam_discussion:
-    - text: "1.	Pre-Exam Discussion:\nYour doctor or nurse will explain the procedure and answer any questions you have. You can request to have someone else present in the room if you'd like."
+    - text: "1. Pre-Exam Discussion:\nYour doctor or nurse will explain the procedure and answer any questions you have. You can request to have someone else present in the room if you'd like."
 
   utter_getting_ready:
     - text: "2.  Getting Ready:\nBefore the procedure, your doctor or nurse"

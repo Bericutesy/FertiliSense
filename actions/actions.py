@@ -27,7 +27,7 @@ wiki_wiki = wikipediaapi.Wikipedia(
 )
 
 # Set up OpenAI API key
-openai.api_key = ''
+openai.api_key = 
 
 class ActionGreet(Action):
     def name(self) -> str:
@@ -1536,6 +1536,7 @@ class ActionCollectStartDates(Action):
             dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
             return [SlotSet("start_dates", None), UserUtteranceReverted()]  # Stop and revert the conversation
 
+
 # Action to collect and validate end dates
 class ActionCollectEndDates(Action):
     def name(self) -> str:
@@ -1677,45 +1678,6 @@ class ActionEvaluateSymptoms(Action):
         return []
     
 # Actions for handling delete symptoms
-class ActionDeleteLogs(Action):
-    def name(self) -> str:
-        return "action_delete_logs"
-
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
-        # Retrieve user input for start and end dates
-        start_dates = tracker.get_slot("start_dates")
-        end_dates = tracker.get_slot("end_dates")
-        user_id = tracker.sender_id
-
-        if not start_dates or not end_dates:
-            dispatcher.utter_message(text="Please provide both start and end dates to delete the log.")
-            return []
-
-        try:
-            # Fetch existing logs
-            doc_ref = db.collection('symptom_logs').document(user_id)
-            doc = doc_ref.get()
-
-            if doc.exists:
-                historical_logs = doc.to_dict().get('logs', [])
-                # Filter out the log entry that matches the provided start and end dates
-                updated_logs = [
-                    log for log in historical_logs
-                    if not (log.get('start_dates') == start_dates and log.get('end_dates') == end_dates)
-                ]
-
-                # Update Firestore document with the new logs (after deletion)
-                doc_ref.set({'logs': updated_logs}, merge=True)
-
-                dispatcher.utter_message(text="The log has been deleted successfully.")
-            else:
-                dispatcher.utter_message(text="No logs found for this user.")
-
-        except Exception as e:
-            dispatcher.utter_message(text="There was an error deleting the log.")
-            print(f"ERROR: {e}")
-
-        return []
     
 # Actions for handling update symptoms
 
@@ -1959,7 +1921,7 @@ class ActionCreateLogs(Action):
             }, merge=True)
 
              # Send a success message
-            dispatcher.utter_message(text="Your menstrual cycle has been successfully recorded. You can now view it in your calendar and check the predicted cycle dates.")
+            dispatcher.utter_message(text="Your menstrual cycle information has been logged successfully.")
 
             # Reset slots
             return [SlotSet("start_dates", None), SlotSet("end_date", None), SlotSet("cycle_duration", None), SlotSet("period_duration", None)]
@@ -2115,19 +2077,11 @@ class ActionDeleteMenstrualCycle(Action):
                 updated_cycles = [cycle for cycle in cycles if not (cycle['start_date'] == delete_start_date and cycle['end_date'] == delete_end_date)]
 
                 if len(updated_cycles) < len(cycles):
-                    # Check if the deleted cycle was the only one
-                    if len(cycles) == 1:
-                        # Delete the only cycle and predictions
-                        doc_ref.delete()
-                        dispatcher.utter_message(text=f"The only cycle from {delete_start_date} to {delete_end_date} has been successfully deleted along with its predictions.")
-                    else:
-                        # Update Firestore with the remaining cycles
-                        doc_ref.update({'cycles': updated_cycles})
-                        dispatcher.utter_message(text=f"Cycle from {delete_start_date} to {delete_end_date} has been successfully deleted.")
-                        
-                        # Recalculate predictions based on remaining cycles
-                        self.recalculate_predictions(doc_ref, updated_cycles)
-
+                    # Update Firestore with the remaining cycles
+                    doc_ref.update({
+                        'cycles': updated_cycles
+                    })
+                    dispatcher.utter_message(text=f"Cycle from {delete_start_date} to {delete_end_date} has been successfully deleted.")
                 else:
                     dispatcher.utter_message(text="No cycle found with the provided start and end dates.")
             else:
@@ -2138,41 +2092,5 @@ class ActionDeleteMenstrualCycle(Action):
 
         # Reset the slots after deletion
         return [SlotSet("delete_start_dates", None), SlotSet("delete_end_date", None)]
-    
-    def recalculate_predictions(self, doc_ref, cycles):
-        predictions = []
-        current_start_date = None
-
-        if cycles:
-            last_cycle = cycles[-1]
-            cycle_duration_days = last_cycle['cycle_duration']
-            current_start_date = datetime.strptime(last_cycle['start_date'], "%d/%m/%Y") + timedelta(days=cycle_duration_days)
-
-        for _ in range(4):  # Predict for the next four cycles
-            cycle_end_date_dt = current_start_date + timedelta(days=last_cycle['period_duration'] - 1)
-            cycle_end_date = cycle_end_date_dt.strftime("%d/%m/%Y")
-            next_cycle_start_date_dt = current_start_date + timedelta(days=cycle_duration_days)
-            next_cycle_start_date = next_cycle_start_date_dt.strftime("%d/%m/%Y")
-
-            # Ovulation and fertile window calculations
-            ovulation_date_dt = next_cycle_start_date_dt - timedelta(days=14)
-            ovulation_date = ovulation_date_dt.strftime("%d/%m/%Y")
-            fertile_window_start_dt = ovulation_date_dt - timedelta(days=2)
-            fertile_window_end_dt = ovulation_date_dt + timedelta(days=2)
-            fertile_window_start = fertile_window_start_dt.strftime("%d/%m/%Y")
-            fertile_window_end = fertile_window_end_dt.strftime("%d/%m/%Y")
-
-            predictions.append({
-                'cycle_start_date': current_start_date.strftime("%d/%m/%Y"),
-                'cycle_end_date': cycle_end_date,
-                'fertile_window_start': fertile_window_start,
-                'fertile_window_end': fertile_window_end,
-                'ovulation_date': ovulation_date,
-            })
-
-            current_start_date = next_cycle_start_date_dt  # Move to the next cycle start date
-
-        # Update Firestore with the recalculated predictions
-        doc_ref.update({'predictions': predictions})
 
 # Actions for handling update menstrual cycle

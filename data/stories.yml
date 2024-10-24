@@ -883,25 +883,15 @@ stories:
       - action: action_create_log
       - action: action_evaluate_symptoms
 
-# handles delete symptoms
-  - story: delete symptoms
-    steps:
-      - intent: delete_symptoms
-      - action: utter_ask_start_symptoms
-      - intent: inform
-      - action: action_collect_start_dates
-      - action: utter_ask_end_symptoms
-      - intent: inform
-      - action: action_collect_end_dates
-      - action: action_delete_logs
-
-# handles update symptoms
-
 # handles show logged of cycle
   - story: show menstrual cycles
     steps:
       - intent: show_cycles
       - action: action_show_cycles
+
+# handles delete symptoms
+
+# handles update symptoms
 
 # handles create menstrual cycle
   - story: log menstrual cycle
