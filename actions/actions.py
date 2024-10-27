@@ -27,7 +27,7 @@ wiki_wiki = wikipediaapi.Wikipedia(
 )
 
 # Set up OpenAI API key
-openai.api_key = ''
+openai.api_key = 
 
 class ActionGreet(Action):
     def name(self) -> str:
@@ -1513,118 +1513,117 @@ class ActionCollectStartDates(Action):
     def name(self) -> str:
         return "action_collect_start_dates"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
-        start_dates = tracker.latest_message['text']  # User input
-        current_date = datetime.now().strftime("%d/%m/%Y")  # Current date as dd/mm/yyyy
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        start_date_input = tracker.latest_message.get('text')
+        
+        date_match = re.search(r'\d{2}/\d{2}/\d{4}', start_date_input)
+        
+        if date_match:
+            start_date_str = date_match.group()
+            try:
+                start_date = datetime.strptime(start_date_str, '%d/%m/%Y')
+                current_date = datetime.now()
+                
+                if start_date > current_date:
+                    dispatcher.utter_message(text=f"The start date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid start date.")
+                    return []
+                else:
+                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}. Please provide the end date (in dd/mm/yyyy).")
+                    return [SlotSet("start_dates", start_date_str)]
 
-        # Validate date format
-        try:
-            # Convert start_dates to datetime object for comparison
-            start_date_obj = datetime.strptime(start_dates, "%d/%m/%Y")
-            current_date_obj = datetime.strptime(current_date, "%d/%m/%Y")
-
-            # Check if start date is in the future
-            if start_date_obj > current_date_obj:
-                dispatcher.utter_message(text=f"The start date cannot be after today ({current_date}). Please provide a valid start date.")
-                return [SlotSet("start_dates", None), UserUtteranceReverted()]  # Stop and revert the conversation
-
-            dispatcher.utter_message(text=f"Start date recorded: {start_dates}.")
-            print(f"Collected start date: {start_dates}")  # Debugging
-            return [SlotSet("start_dates", start_dates)]
-
-        except ValueError:
+            except ValueError:
+                dispatcher.utter_message(text="There was an error processing the date. Please try again.")
+                return []
+        else:
             dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
-            return [SlotSet("start_dates", None), UserUtteranceReverted()]  # Stop and revert the conversation
+            return []
 
-
-# Action to collect and validate end dates
 class ActionCollectEndDates(Action):
     def name(self) -> str:
         return "action_collect_end_dates"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
-        end_dates = tracker.latest_message['text']  # User input
-        current_date = datetime.now().strftime("%d/%m/%Y")  # Current date as dd/mm/yyyy
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        end_date_input = tracker.latest_message.get('text')
+        
+        date_match = re.search(r'\d{2}/\d{2}/\d{4}', end_date_input)
+        
+        if date_match:
+            end_date_str = date_match.group()
+            try:
+                end_date = datetime.strptime(end_date_str, '%d/%m/%Y')
+                current_date = datetime.now()
+                
+                if end_date > current_date:
+                    dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
+                    return []
+                else:
+                    dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please describe your symptoms.")
+                    return [SlotSet("end_dates", end_date_str)]
 
-        # Validate date format
-        try:
-            # Convert end_dates to datetime object for comparison
-            end_date_obj = datetime.strptime(end_dates, "%d/%m/%Y")
-            current_date_obj = datetime.strptime(current_date, "%d/%m/%Y")
-
-            # Check if end date is in the future
-            if end_date_obj > current_date_obj:
-                dispatcher.utter_message(text=f"The end date cannot be after today ({current_date}). Please provide a valid end date.")
-                return [SlotSet("end_dates", None), UserUtteranceReverted()]  # Stop and revert the conversation
-
-            dispatcher.utter_message(text=f"End date recorded: {end_dates}.")
-            print(f"Collected end date: {end_dates}")  # Debugging
-            return [SlotSet("end_dates", end_dates)]
-
-        except ValueError:
+            except ValueError:
+                dispatcher.utter_message(text="There was an error processing the date. Please try again.")
+                return []
+        else:
             dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
-            return [SlotSet("end_dates", None), UserUtteranceReverted()] 
+            return []
 
 class ActionCollectSymptoms(Action):
     def name(self) -> str:
         return "action_collect_symptoms"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
-        symptoms = tracker.latest_message['text']
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        symptoms = tracker.latest_message.get('text')
+        
         dispatcher.utter_message(text=f"Symptoms recorded: {symptoms}.")
-        print(f"Collected symptoms: {symptoms}")  # Debugging
+        print(f"Collected symptoms: {symptoms}")
         return [SlotSet("symptoms", symptoms)]
+
 
 class ActionCreateLog(Action):
     def name(self) -> str:
         return "action_create_log"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
-        intent = tracker.latest_message['intent']['name']
-        print(f"Detected intent: {intent}") 
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        intent = tracker.latest_message['intent'].get('name')
         start_dates = tracker.get_slot("start_dates")
         end_dates = tracker.get_slot("end_dates")
         symptoms = tracker.get_slot("symptoms")
         user_id = tracker.sender_id
 
-        print(f"Start dates slot: {start_dates}")
-        print(f"End dates slot: {end_dates}")
-        print(f"Symptoms slot: {symptoms}")
+        print(f"Intent: {intent}")
+        print(f"Start Date: {start_dates}")
+        print(f"End Date: {end_dates}")
+        print(f"Symptoms: {symptoms}")
 
         try:
-            # Fetch existing logs
             doc_ref = db.collection('symptom_logs').document(user_id)
             doc = doc_ref.get()
 
-            if doc.exists:
-                # Get existing logs and append the new one
-                historical_logs = doc.to_dict().get('logs', [])
-            else:
-                # Initialize if no logs exist
-                historical_logs = []
+            historical_logs = doc.to_dict().get('logs', []) if doc.exists else []
 
-            # Add new log
+            # Append new log entry
             historical_logs.append({
                 'start_dates': start_dates,
                 'end_dates': end_dates,
                 'symptoms': symptoms
             })
 
-            # Update Firestore document with the new log
+            # Update Firestore with the new log
             doc_ref.set({'logs': historical_logs}, merge=True)
-
             dispatcher.utter_message(text="Your symptoms have been logged successfully.")
+
         except Exception as e:
             dispatcher.utter_message(text="There was an error logging your symptoms.")
             print(f"ERROR: {e}")
 
         return []
     
+
 class ActionEvaluateSymptoms(Action):
     def name(self) -> str:
         return "action_evaluate_symptoms"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
+    async def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
         # Retrieve the symptoms from the slot
         symptoms = tracker.get_slot("symptoms")
         user_id = tracker.sender_id
@@ -1633,18 +1632,24 @@ class ActionEvaluateSymptoms(Action):
             dispatcher.utter_message(text="I don't have any symptoms to evaluate.")
             return []
 
+        # Ensure symptoms are in a readable format if multiple symptoms are provided
+        if isinstance(symptoms, list):
+            symptoms_text = ", ".join(symptoms)  # Join multiple symptoms with commas
+        else:
+            symptoms_text = symptoms  # Handle single symptom as a string
+
         try:
             # Construct the chat message for OpenAI
             messages = [
                 {"role": "system", "content": "You are an AI health assistant."},
-                {"role": "user", "content": f"I am experiencing the following symptoms: {symptoms}. What could be the possible condition?"}
+                {"role": "user", "content": f"I am experiencing the following symptoms: {symptoms_text}. What could be the possible condition?"}
             ]
 
-            # Call OpenAI Chat Completion API
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",  # or "gpt-4", depending on your plan
+            # Call OpenAI Chat Completion API asynchronously
+            response = await openai.ChatCompletion.acreate(
+                model="gpt-3.5-turbo",  # or "gpt-4" if available on your plan
                 messages=messages,
-                max_tokens=70,
+                max_tokens=150,
                 n=1,
                 stop=None,
                 temperature=0.7,
@@ -1667,6 +1672,8 @@ class ActionEvaluateSymptoms(Action):
             # Add the evaluation to the latest log
             if historical_logs:
                 historical_logs[-1]['evaluation'] = evaluation
+            else:
+                historical_logs.append({'symptoms': symptoms_text, 'evaluation': evaluation})
 
             # Update Firestore with the evaluation
             doc_ref.set({'logs': historical_logs}, merge=True)
@@ -1676,6 +1683,7 @@ class ActionEvaluateSymptoms(Action):
             print(f"ERROR: {e}")  # Debugging the error
 
         return []
+
     
 # Actions for handling delete symptoms
     

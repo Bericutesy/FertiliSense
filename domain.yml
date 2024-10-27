@@ -271,6 +271,9 @@ intents:
   - inform_period_duration
   - log_menstrual_cycle
 
+  - provide_start_date
+  - provide_end_date
+  - describe_symptoms
   - log_symptoms
   - inform_symptoms
   
@@ -936,6 +939,9 @@ responses:
   utter_error_logging:
     - text: "There was an error logging your menstrual cycle information. Please try again later."
 
+
+  utter_ask_symptom_start_date:
+    - text: "Please provide the start date of your symptoms?\n Example: Start Date: DD/MM/YYYY"
 
 session_config:
   session_expiration_time: 60

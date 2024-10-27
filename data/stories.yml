@@ -868,18 +868,20 @@ stories:
       - action: utter_did_that_help
 
 # handles create symptoms
-  - story: log symptoms
+  - story: log symptoms process
     steps:
       - intent: log_symptoms
-      - action: utter_ask_start_symptoms
-      - intent: inform_start_date
+
+      - action: utter_ask_symptom_start_date
+      - intent: provide_start_date
       - action: action_collect_start_dates
-      - action: utter_ask_end_symptoms
-      - intent: inform
+
+      - intent: provide_end_date
       - action: action_collect_end_dates
-      - action: utter_ask_symptoms
-      - intent: inform_symptoms
+
+      - intent: describe_symptoms
       - action: action_collect_symptoms
+
       - action: action_create_log
       - action: action_evaluate_symptoms
 
