@@ -872,7 +872,7 @@ stories:
     steps:
       - intent: log_symptoms
       - action: utter_ask_start_symptoms
-      - intent: inform
+      - intent: inform_start_date
       - action: action_collect_start_dates
       - action: utter_ask_end_symptoms
       - intent: inform
@@ -882,12 +882,6 @@ stories:
       - action: action_collect_symptoms
       - action: action_create_log
       - action: action_evaluate_symptoms
-
-# handles show logged of cycle
-  - story: show menstrual cycles
-    steps:
-      - intent: show_cycles
-      - action: action_show_cycles
 
 # handles delete symptoms
 
@@ -918,3 +912,17 @@ stories:
       - intent: inform_end_date
       - action: action_delete_end_date
       - action: action_delete_menstrual_cycle
+
+# handles update cycle
+  - story: update menstrual cycle
+    steps:
+      - intent: update_log_menstrual_cycle
+      - action: action_show_logged_cycles_for_update
+      - action: action_collect_update_start_date
+      - intent: inform_update_start_date
+      - action: action_fetch_matching_cycle
+      - action: action_ask_update_field
+      - intent: inform_update_field
+      - action: action_collect_updated_value
+      - intent: inform_update_value
+      - action: action_update_cycle_in_firestore

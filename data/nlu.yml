@@ -1554,37 +1554,26 @@ nlu:
     - Track when my period starts and stops
 - intent: inform_start_date
   examples: |
-    - My start date is 12/10/2023
-    - The start date is 15/09/2023
-    - 25th December 2023
-    - Starting on 15/10/2023
     - Start date: 10/11/2023
     - start date 10/10/2024
     - Start Date: 15/10/2024
     - start date 15/10/2024
 - intent: inform_end_date
   examples: |
-    - My end date is 17/10/2023
-    - The end date is 20/09/2023
-    - 28th December 2023
-    - Ends on 15/10/2023
     - End Date: 20/10/2023
     - end date: 20/10/2024
     - end date 20/10/2024
+    - End Date 20/10/2024
 - intent: inform_cycle_duration
   examples: |
-    - My cycle lasts for 28 days
-    - The duration is 30 days
-    - It's 26 days
     - 25 days
-    - My cycle is 27 days long
+    - 25 Days
 - intent: inform_period_duration
   examples: |
-    - My period lasted for 5 days
-    - The period duration is 6 days
-    - 4 days
     - Lasted for 7 days
-    - Period is 3 days
+    - lasted for 7 days
+    - Lasted For 7 days
+    - Lasted For 7 Days
 - intent: inform_symptoms
   examples: |
     - cramps
@@ -1623,12 +1612,6 @@ nlu:
     - 20/04/2023
     - 12/05/2023
     - 19/05/2023
-- intent: show_cycles
-  examples: |
-    - Show me my logged cycles
-    - Can I see my cycles?
-    - Display my menstrual cycles
-    - I want to view my logged periods
 - intent: delete_log_menstrual_cycle
   examples: |
     - i want to delete my cycle
@@ -1636,3 +1619,40 @@ nlu:
     - Delete my menstrual cycle
     - I want to remove a cycle
     - Remove my menstrual cycle
+- intent: update_log_menstrual_cycle
+  examples: |
+    - I want to update my cycle
+    - Can I update my logged cycle?
+    - I need to edit my cycle information
+    - update my menstrual cycle
+- intent: inform_update_start_date
+  examples: |
+    - I want to update the cycle that started on [11/10/2023](update_start_date)
+    - The cycle that started on [15/09/2023](update_start_date)
+    - It started on [20/08/2023](update_start_date)
+    - start date [20/08/2023](update_start_date)
+    - It starts on [13/08/2024](update_start_date)
+- intent: inform_update_field
+  examples: |
+    - I want to update the [start date](update_field)
+    - Change the [end date](update_field)
+    - Update the [cycle duration](update_field)
+    - I want to change the [period duration](update_field)
+    - Update my [start date](update_field)
+    - Can I change the [end date](update_field)?
+    - I would like to update the [cycle duration](update_field)
+    - Modify the [period duration](update_field)
+    - I need to update the [start date](update_field)
+    - I want to modify the [end date](update_field)
+    - Please change the [cycle duration](update_field)
+- intent: inform_update_value
+  examples: |
+    - The new value is [15/10/2023](update_value)
+    - Change it to [20/10/2023](update_value)
+    - Set the start date to [01/11/2023](update_value)
+    - Make the period duration [5 days](update_value)
+    - Update it to [28 days](update_value)
+    - The new end date is [25/10/2023](update_value)
+    - Modify it to [27 days](update_value)
+    - Change the period duration to [6 days](update_value)
+    - Set the cycle duration to [29 days](update_value)

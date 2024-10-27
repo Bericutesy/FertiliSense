@@ -1939,44 +1939,6 @@ class ActionLogMenstrualCycle(Action):
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
         dispatcher.utter_message(text="Please provide the start date of your cycle?\n\nExample:\nStart Date: DD/MM/YYYY")
         return []
-
-# Actions for handling showing logged cycle 
-class ActionShowCycles(Action):
-    def name(self) -> str:
-        return "action_show_cycles"
-
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
-        user_id = tracker.sender_id
-
-        try:
-            # Fetch the user's menstrual cycles from Firestore
-            doc_ref = db.collection('menstrual_cycles').document(user_id)
-            doc = doc_ref.get()
-
-            if doc.exists:
-                cycles = doc.to_dict().get('cycles', [])
-                if cycles:
-                    # Create a message to display the cycles
-                    cycles_message = "Here are your logged menstrual cycles:\n"
-                    for cycle in cycles:
-                        cycles_message += (f"Start Date: {cycle['start_date']}, "
-                                           f"End Date: {cycle['end_date']}, "
-                                           f"Cycle Duration: {cycle['cycle_duration']} days, "
-                                           f"Period Duration: {cycle['period_duration']} days\n")
-                    dispatcher.utter_message(text=cycles_message)
-                    
-                    # Ask if they want to update their cycle
-                    dispatcher.utter_message(text="Do you want to update any of your cycles?")
-                else:
-                    dispatcher.utter_message(text="You have not logged any menstrual cycles yet.")
-            else:
-                dispatcher.utter_message(text="You have not logged any menstrual cycles yet.")
-
-        except Exception as e:
-            dispatcher.utter_message(text="There was an error retrieving your menstrual cycles. Please try again.")
-            print(f"ERROR: {e}")
-
-        return []
     
 # Actions for handling delete menstrual cycle
 class ActionDeleteLogMenstrualCycle(Action):
@@ -2210,3 +2172,254 @@ class ActionDeleteMenstrualCycle(Action):
         doc_ref.update({'predictions': predictions})
 
 # Actions for handling update menstrual cycle
+class ActionShowLoggedCyclesForUpdate(Action):
+    def name(self) -> str:
+        return "action_show_logged_cycles_for_update"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        user_id = tracker.sender_id
+
+        try:
+            # Fetch the user's menstrual cycles from Firestore
+            doc_ref = db.collection('menstrual_cycles').document(user_id)
+            doc = doc_ref.get()
+
+            if doc.exists:
+                cycles = doc.to_dict().get('cycles', [])
+                if cycles:
+                    # Create a message to display the cycles
+                    cycles_message = "Here are your logged menstrual cycles:\n"
+                    for cycle in cycles:
+                        cycles_message += (f"Start Date: {cycle['start_date']}, "
+                                           f"End Date: {cycle['end_date']}, "
+                                           f"Cycle Duration: {cycle['cycle_duration']} days, "
+                                           f"Period Duration: {cycle['period_duration']} days\n")
+                    dispatcher.utter_message(text=cycles_message)
+                else:
+                    dispatcher.utter_message(text="You have not logged any menstrual cycles yet.")
+            else:
+                dispatcher.utter_message(text="You have not logged any menstrual cycles yet.")
+
+        except Exception as e:
+            dispatcher.utter_message(text="There was an error retrieving your menstrual cycles. Please try again.")
+            print(f"ERROR: {e}")
+
+        return []
+
+class ActionCollectUpdateStartDate(Action):
+    def name(self) -> str:
+        return "action_collect_update_start_date"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        # Prompt user for the start date of the cycle they want to update
+        dispatcher.utter_message(text="Please provide the start date of the cycle you'd like to update.\n\nExample:\nIt Starts on: DD/MM/YYYY")
+        
+        return []
+
+
+class ActionFetchMatchingCycle(Action):
+    def name(self) -> str:
+        return "action_fetch_matching_cycle"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        user_id = tracker.sender_id
+        update_start_date = tracker.get_slot('update_start_date')
+
+        if not update_start_date:
+            dispatcher.utter_message(text="I couldn't find the start date you provided. Please try again.")
+            return []
+
+        try:
+            # Fetch the user's menstrual cycles from Firestore
+            doc_ref = db.collection('menstrual_cycles').document(user_id)
+            doc = doc_ref.get()
+
+            if doc.exists:
+                cycles = doc.to_dict().get('cycles', [])
+                matching_cycle = None
+
+                # Search for the cycle that matches the start date
+                for cycle in cycles:
+                    if cycle['start_date'] == update_start_date:
+                        matching_cycle = cycle
+                        break
+
+                if matching_cycle:
+                    # Show details of the matching cycle
+                    dispatcher.utter_message(text=(f"Cycle found: Start Date: {matching_cycle['start_date']}, "
+                                                   f"End Date: {matching_cycle['end_date']}, "
+                                                   f"Cycle Duration: {matching_cycle['cycle_duration']} days, "
+                                                   f"Period Duration: {matching_cycle['period_duration']} days."))
+                else:
+                    dispatcher.utter_message(text=f"No cycle found with start date {update_start_date}. Please check your entry.")
+            else:
+                dispatcher.utter_message(text="You have not logged any menstrual cycles yet.")
+
+        except Exception as e:
+            dispatcher.utter_message(text="There was an error retrieving the cycle. Please try again later.")
+            print(f"ERROR: {e}")
+
+        return []
+
+class ActionAskUpdateField(Action):
+    def name(self) -> str:
+        return "action_ask_update_field"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        # Asking the user which part of the cycle they want to update
+        dispatcher.utter_message(text="Which part of the cycle would you like to update? (start date, end date, cycle duration, or period duration)\n\nExample:\nChange the start date:")
+        return []
+
+
+
+class ActionUpdateCycleInFirestore(Action):
+    def name(self) -> str:
+        return "action_update_cycle_in_firestore"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        user_id = tracker.sender_id
+        update_start_date = tracker.get_slot('update_start_date')
+        update_field = tracker.get_slot('update_field')
+        new_value = tracker.get_slot('new_value')  # The updated value the user provided
+
+        try:
+            # Extract the actual value from the new_value slot
+            if update_field in ["start date", "end date"]:
+                # Extract the date from the user's input (e.g., "The new value is 10/10/2023")
+                date_match = re.search(r'\d{2}/\d{2}/\d{4}', new_value)
+                if date_match:
+                    new_value = date_match.group(0)  # Extract the actual date
+                else:
+                    dispatcher.utter_message(text="I couldn't extract a valid date. Please provide the date in DD/MM/YYYY format.")
+                    return []
+            elif update_field in ["cycle duration", "period duration"]:
+                # Extract the number from the user's input (e.g., "The duration is 30 days")
+                duration_match = re.search(r'\d+', new_value)
+                if duration_match:
+                    new_value = int(duration_match.group(0))  # Extract the actual number and convert to integer
+                else:
+                    dispatcher.utter_message(text="I couldn't extract a valid number. Please provide the duration as a number.")
+                    return []
+
+            # Fetch the user's menstrual cycles from Firestore
+            doc_ref = db.collection('menstrual_cycles').document(user_id)
+            doc = doc_ref.get()
+
+            if doc.exists:
+                cycles = doc.to_dict().get('cycles', [])
+
+                # Search for the cycle to update
+                for cycle in cycles:
+                    if cycle['start_date'] == update_start_date:
+                        print(f"Updating cycle: {cycle}")  # Debug print to verify the cycle being updated
+
+                        # Update the chosen field with the extracted new value
+                        if update_field == "start date":
+                            cycle['start_date'] = new_value  # Update the existing key for start date
+                        elif update_field == "end date":
+                            cycle['end_date'] = new_value  # Update the existing key for end date
+                        elif update_field == "cycle duration":
+                            cycle['cycle_duration'] = new_value  # Update cycle duration
+                        elif update_field == "period duration":
+                            cycle['period_duration'] = new_value  # Update period duration
+                        else:
+                            dispatcher.utter_message(text="Invalid field selected for update.")
+                            return []
+
+                        print(f"Cycle after update: {cycle}")  # Debug print to show the updated cycle
+                        break
+
+                # Update the document in Firestore
+                doc_ref.update({'cycles': cycles})
+                print(f"Updated cycles in Firestore: {cycles}")  # Debug print to verify what is being written
+
+                # Recalculate predictions based on updated cycle information
+                self.recalculate_predictions(doc_ref, cycles)
+
+                dispatcher.utter_message(text=f"Your menstrual cycle's {update_field} has been updated successfully, and predictions have been recalculated.")
+
+            else:
+                dispatcher.utter_message(text="No cycles found to update.")
+
+        except Exception as e:
+            dispatcher.utter_message(text="There was an error updating your cycle. Please try again.")
+            print(f"ERROR: {e}")  # Log the error for debugging
+
+        return []
+
+    def recalculate_predictions(self, doc_ref, cycles):
+        predictions = []
+        current_start_date = None
+
+        if cycles:
+            last_cycle = cycles[-1]  # Use the most recent cycle for prediction logic
+            cycle_duration_days = last_cycle['cycle_duration']
+            current_start_date = datetime.strptime(last_cycle['start_date'], "%d/%m/%Y") + timedelta(days=cycle_duration_days)
+
+            for _ in range(4):  # Predict for the next four cycles
+                cycle_end_date_dt = current_start_date + timedelta(days=last_cycle['period_duration'] - 1)
+                cycle_end_date = cycle_end_date_dt.strftime("%d/%m/%Y")
+                next_cycle_start_date_dt = current_start_date + timedelta(days=cycle_duration_days)
+                next_cycle_start_date = next_cycle_start_date_dt.strftime("%d/%m/%Y")
+
+                # Ovulation and fertile window calculations
+                ovulation_date_dt = next_cycle_start_date_dt - timedelta(days=14)
+                ovulation_date = ovulation_date_dt.strftime("%d/%m/%Y")
+                fertile_window_start_dt = ovulation_date_dt - timedelta(days=2)
+                fertile_window_end_dt = ovulation_date_dt + timedelta(days=2)
+                fertile_window_start = fertile_window_start_dt.strftime("%d/%m/%Y")
+                fertile_window_end = fertile_window_end_dt.strftime("%d/%m/%Y")
+
+                # Strong flow calculations: 2nd and 3rd day of the period
+                strong_flow_start_dt = current_start_date + timedelta(days=1)  # 2nd day
+                strong_flow_end_dt = current_start_date + timedelta(days=2)  # 3rd day
+                strong_flow_start = strong_flow_start_dt.strftime("%d/%m/%Y")
+                strong_flow_end = strong_flow_end_dt.strftime("%d/%m/%Y")
+
+                predictions.append({
+                    'cycle_start_date': current_start_date.strftime("%d/%m/%Y"),
+                    'cycle_end_date': cycle_end_date,
+                    'fertile_window_start': fertile_window_start,
+                    'fertile_window_end': fertile_window_end,
+                    'ovulation_date': ovulation_date,
+                    'strong_flow_start': strong_flow_start,
+                    'strong_flow_end': strong_flow_end
+                })
+
+                current_start_date = next_cycle_start_date_dt  # Move to the next cycle start date
+
+        # Update Firestore with the recalculated predictions
+        doc_ref.update({'predictions': predictions})
+
+
+
+
+
+class ActionCollectUpdatedValue(Action):
+    def name(self) -> str:
+        return "action_collect_updated_value"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        # Get the field the user wants to update
+        update_field = tracker.get_slot('update_field')
+
+        # Capture the user's input as the new value
+        new_value = tracker.latest_message.get('text')  # Extract user input
+        print(f"Captured new value: {new_value}")  # Debugging: Print the captured value to verify
+
+        # Return SlotSet to update the new_value slot
+        events = [SlotSet("new_value", new_value)]  # Set the new value in the slot
+
+        # Provide feedback based on the field the user is updating
+        if update_field == "start date":
+            dispatcher.utter_message(text="Please enter the new value for the start date in DD/MM/YYYY format.\n\nExample:\nChange it to: DD/MM/YYYY")
+        elif update_field == "end date":
+            dispatcher.utter_message(text="For end date, please enter in DD/MM/YYYY format.\n\nExample:\nChange it to: DD/MM/YYYY")
+        elif update_field == "cycle duration":
+            dispatcher.utter_message(text="For cycle duration, please enter the number of days.\n\nExample:\nChange it to: 29 days")
+        elif update_field == "period duration":
+            dispatcher.utter_message(text="For period duration, please enter the number of days.\n\nExample:\nChange it to: 4 days")
+        else:
+            dispatcher.utter_message(text="I didn't recognize the field to update.")
+
+        return events  # Return SlotSet event to ensure the new value is set

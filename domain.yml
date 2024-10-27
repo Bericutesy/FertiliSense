@@ -120,22 +120,32 @@ actions:
   - action_hiv_treatment
   - action_medication_during_pregnancy
   - action_best_time_safe_sex
+
   - action_create_logs
   - action_collect_end_date
   - action_collect_cycle_duration
   - action_collect_period_duration
   - action_collect_start_date
   - action_log_menstrual_cycle
+
   - action_collect_symptoms
   - action_collect_start_dates
   - action_collect_end_dates
   - action_create_log
   - action_evaluate_symptoms
-  - action_show_cycles
+
   - action_delete_log_menstrual_cycle
   - action_delete_start_date
   - action_delete_end_date
   - action_delete_menstrual_cycle
+
+  - action_show_logged_cycles_for_update
+  - action_collect_update_start_date
+  - action_fetch_matching_cycle
+  - action_apply_cycle_updates
+  - action_collect_updated_value
+  - action_update_cycle_in_firestore
+  - action_ask_update_field
 
 intents:
   - greet
@@ -254,15 +264,22 @@ intents:
   - hiv_treatment
   - medication_during_pregnancy
   - best_time_safe_sex
+
   - inform_start_date
   - inform_end_date
   - inform_cycle_duration
   - inform_period_duration
   - log_menstrual_cycle
+
   - log_symptoms
   - inform_symptoms
-  - show_cycles
+  
   - delete_log_menstrual_cycle
+
+  - update_log_menstrual_cycle
+  - inform_update_start_date
+  - inform_update_field
+  - inform_update_value
 
 entities:
   - start_dates
@@ -273,6 +290,9 @@ entities:
   - symptoms
   - delete_end_date
   - delete_start_dates
+  - update_start_date
+  - update_field
+  - update_value
 
 slots:
   start_dates:
@@ -315,6 +335,27 @@ slots:
     mappings:
       - type: from_entity
         entity: delete_end_date
+  update_start_date:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: update_start_date
+
+  update_field:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: update_field
+
+  update_value:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: update_value
+  new_value:
+    type: text
+    mappings:
+      - type: from_text
       
 responses:
   utter_greet:
