@@ -27,7 +27,7 @@ wiki_wiki = wikipediaapi.Wikipedia(
 )
 
 # Set up OpenAI API key
-openai.api_key = 
+openai.api_key = ''
 
 class ActionGreet(Action):
     def name(self) -> str:
@@ -1689,6 +1689,7 @@ class ActionEvaluateSymptoms(Action):
     
 # Actions for handling update symptoms
 
+
 # Actions for handling create menstrual cycle
 class ActionCollectStartDate(Action):
     def name(self) -> str:
@@ -1711,9 +1712,27 @@ class ActionCollectStartDate(Action):
                 if start_date > current_date:
                     dispatcher.utter_message(text=f"The start date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid start date.")
                     return []
-                else:
-                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_input}. What is the end date of your cycle?\nExample:\nEnd Date: DD/MM/YYYY")
-                    return [SlotSet("start_dates", start_date_input)]
+
+                # Fetch existing cycles to check for overlapping start dates
+                user_id = tracker.sender_id
+                doc_ref = db.collection('menstrual_cycles').document(user_id)
+                doc = doc_ref.get()
+
+                historical_cycles = doc.to_dict().get('cycles', []) if doc.exists else []
+
+                # Check for overlaps with existing cycles
+                for cycle in historical_cycles:
+                    cycle_start = datetime.strptime(cycle['start_date'], "%d/%m/%Y")
+                    cycle_end = datetime.strptime(cycle['end_date'], "%d/%m/%Y")
+
+                    # Check if the new start date overlaps with an existing cycle
+                    if cycle_start <= start_date <= cycle_end:
+                        dispatcher.utter_message(text="The start date overlaps with an existing cycle. Please provide a non-overlapping start date.")
+                        return []
+
+                # If all checks pass, confirm the start date
+                dispatcher.utter_message(text=f"Start Date recorded: {start_date_input}. What is the end date of your cycle?\nExample:\nEnd Date: DD/MM/YYYY")
+                return [SlotSet("start_dates", start_date_input)]
 
             except ValueError:
                 dispatcher.utter_message(text="There was an error processing the date. Please try again.")
@@ -1721,6 +1740,7 @@ class ActionCollectStartDate(Action):
         else:
             dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
             return []
+
 
 class ActionCollectEndDate(Action):
     def name(self) -> str:
@@ -1738,14 +1758,46 @@ class ActionCollectEndDate(Action):
                 # Convert the date string to a datetime object
                 end_date = datetime.strptime(end_date_input, '%d/%m/%Y')
                 current_date = datetime.now()
+                start_date_input = tracker.get_slot("start_dates")  # Get the start date from the slot
 
                 # Check if the end date is after today
                 if end_date > current_date:
                     dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
                     return []
-                else:
-                    dispatcher.utter_message(text=f"End Date recorded: {end_date_input}. How long was your entire cycle (in days)\n\nThe cycle duration typically refers to the length of time between the first day of one menstrual cycle and the first day of the next.\n\nExamples: 23 days")
+
+                # Check if start date is available
+                if start_date_input:
+                    start_date = datetime.strptime(start_date_input, '%d/%m/%Y')
+
+                    # Check if the end date is before the start date
+                    if end_date < start_date:
+                        dispatcher.utter_message(text="The end date cannot be before the start date. Please provide a valid end date.")
+                        return []
+
+                    # Fetch existing cycles to check for overlaps
+                    user_id = tracker.sender_id
+                    doc_ref = db.collection('menstrual_cycles').document(user_id)
+                    doc = doc_ref.get()
+
+                    historical_cycles = doc.to_dict().get('cycles', []) if doc.exists else []
+
+                    # Check for overlaps with existing cycles
+                    for cycle in historical_cycles:
+                        cycle_start = datetime.strptime(cycle['start_date'], "%d/%m/%Y")
+                        cycle_end = datetime.strptime(cycle['end_date'], "%d/%m/%Y")
+
+                        # Check for overlaps
+                        if not (end_date < cycle_start or start_date > cycle_end):
+                            dispatcher.utter_message(text="The new end date overlaps with an existing cycle. Please provide a non-overlapping end date.")
+                            return []
+
+                    # If all checks pass, confirm the end date
+                    dispatcher.utter_message(text=f"End Date recorded: {end_date_input}. How long was your entire cycle (in days)?\n\nExamples: 23 days")
                     return [SlotSet("end_date", end_date_input)]
+
+                else:
+                    dispatcher.utter_message(text="Please provide a valid start date before entering an end date.")
+                    return []
 
             except ValueError:
                 dispatcher.utter_message(text="There was an error processing the date. Please try again.")
@@ -1863,6 +1915,9 @@ class ActionCreateLogs(Action):
                 'cycle_duration': cycle_duration,
                 'period_duration': period_duration
             })
+
+             # Sort cycles by start date
+            historical_cycles.sort(key=lambda cycle: datetime.strptime(cycle['start_date'], "%d/%m/%Y"))
 
             # Calculate strong flow durations based on historical data
             strong_flow_durations = []
