@@ -886,8 +886,39 @@ stories:
       - action: action_evaluate_symptoms
 
 # handles delete symptoms
+  - story: delete symptoms
+    steps:
+      - intent: request_delete_symptoms
+
+      - action: utter_ask_delete_start_date
+      - intent: provide_symptoms_delete_start_date
+      - action: action_collect_symptoms_delete_start_date
+
+      - action: utter_ask_delete_end_date
+      - intent: provide_symptoms_delete_end_date
+      - action: action_collect_symptoms_delete_end_date
+
+      - action: action_delete_symptoms
 
 # handles update symptoms
+  - story: collect update symptoms start date
+    steps:
+      - intent: update_symptoms_log
+
+      - action: utter_ask_update_start_date
+      - intent: provide_symptoms_start_date
+      - action: action_collect_symptoms_start_date
+
+      - action: utter_ask_update_end_date
+      - intent: provide_symptoms_end_date
+      - action: action_collect_symptoms_end_date
+
+      - intent: provide_symptoms
+      - action: action_collect_updated_symptoms
+      
+      - action: action_update_symptoms_log
+
+
 
 # handles create menstrual cycle
   - story: log menstrual cycle
