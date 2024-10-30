@@ -1621,30 +1621,17 @@
   - intent: provide_start_date
     examples: |
       - My symptoms start date is 15/10/2023
-      - The start date for my symptoms is 01/10/2023
-      - Symptoms started on 10/09/2023
-      - My symptoms began on 15/09/2023
       - Start date of symptoms: 12/10/2023
 
   - intent: provide_end_date
     examples: |
       - My symptoms end date is 20/10/2023
-      - The end date for my symptoms is 25/09/2023
-      - Symptoms ended on 30/09/2023
-      - My symptoms stopped on 01/10/2023
       - End date of symptoms: 15/10/2023
 
   - intent: describe_symptoms
     examples: |
-      - I had a headache and fever
-      - My symptoms were nausea and fatigue
-      - Symptoms: dizziness, chills, and sore throat
-      - Feeling unwell with a sore throat and cough
       - I have a headache
-      - My symptom is nausea
-      - Currently experiencing dizziness
       - I'm feeling chills
-      - My only symptom is a sore throat
 
   - intent: log_symptoms
     examples: |
@@ -1652,3 +1639,48 @@
       - Please record my symptoms
       - Log my health symptoms
       - I need to update my symptoms log
+
+  - intent: provide_symptoms_start_date
+    examples: |
+      - Symptoms update start date is [01/10/2023](symptoms_start_date)
+  
+  - intent: provide_symptoms_end_date
+    examples: |
+      - Symptoms update end date is [15/10/2023](symptoms_end_date)
+  
+  - intent: provide_symptoms
+    examples: |
+      - Change symptoms to moodiness
+
+  - intent: update_symptoms_log
+    examples: |
+      - Please update my symptoms log
+      - I want to modify my symptoms records for update
+      - Update my symptoms history for symptoms update
+  - intent: request_delete_symptoms
+    examples: |
+      - I want to delete my symptoms
+      - Remove my symptoms between two dates
+      - Delete symptoms log
+      - I need to clear my symptoms from a specific time period
+      - Can you delete my symptoms for a certain period?
+      - Delete symptoms starting from a specific date
+  - intent: provide_symptoms_delete_start_date
+    examples: |
+      - The start date for symptoms delete is 01/10/2023
+      - Start date for symptoms delete: 15/09/2023
+      - 02/08/2023 for symptoms delete
+      - Let's start symptoms delete from 01/01/2024
+      - Starting date for symptoms delete is 25/12/2023
+      - From 10/07/2022 for symptoms delete
+      - Begin symptoms delete from 20/02/2023
+
+  - intent: provide_symptoms_delete_end_date
+    examples: |
+      - The end date for symptoms delete is 30/10/2023
+      - End date for symptoms delete: 20/09/2023
+      - 05/12/2023 for symptoms delete
+      - Until 15/10/2023 for symptoms delete
+      - Ending date for symptoms delete is 01/11/2023
+      - To 29/10/2023 for symptoms delete
+      - Finish symptoms delete on 30/09/2023

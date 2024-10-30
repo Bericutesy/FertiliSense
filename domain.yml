@@ -147,6 +147,15 @@ actions:
   - action_update_cycle_in_firestore
   - action_ask_update_field
 
+  - action_collect_symptoms_start_date
+  - action_collect_symptoms_end_date
+  - action_collect_updated_symptoms
+  - action_update_symptoms_log
+
+  - action_collect_symptoms_delete_start_date
+  - action_collect_symptoms_delete_end_date
+  - action_delete_symptoms
+
 intents:
   - greet
   - goodbye
@@ -284,6 +293,15 @@ intents:
   - inform_update_field
   - inform_update_value
 
+  - provide_symptoms_start_date
+  - provide_symptoms_end_date
+  - provide_symptoms
+  - update_symptoms_log
+
+  - request_delete_symptoms
+  - provide_symptoms_delete_start_date
+  - provide_symptoms_delete_end_date
+
 entities:
   - start_dates
   - end_date
@@ -296,8 +314,38 @@ entities:
   - update_start_date
   - update_field
   - update_value
+  - symptoms_end_date
+  - symptoms_start_date
+  - new_symptoms
+  - symptoms_delete_start_date
+  - symptoms_delete_end_date
 
 slots:
+  symptoms_delete_start_date:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: symptoms_delete_start_date
+  symptoms_delete_end_date:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: symptoms_delete_end_date
+  new_symptoms:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: new_symptoms
+  symptoms_end_date:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: symptoms_end_date
+  symptoms_start_date:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: symptoms_start_date
   start_dates:
     type: text
     mappings:
@@ -942,6 +990,19 @@ responses:
 
   utter_ask_symptom_start_date:
     - text: "Please provide the start date of your symptoms?\n Example: Start Date: DD/MM/YYYY"
+
+  utter_ask_update_start_date:
+    - text: "Please provide the start date (in dd/mm/yyyy) for update your symptoms."
+
+  utter_ask_update_end_date:
+    - text: "Please provide the end date (in dd/mm/yyyy) for update your symptoms."
+  
+  utter_ask_delete_start_date:
+    - text: "Please provide the start date (in dd/mm/yyyy) for delete your symptoms."
+
+  utter_ask_delete_end_date:
+    - text: "Please provide the end date (in dd/mm/yyyy) for delete your symptoms."
+
 
 session_config:
   session_expiration_time: 60

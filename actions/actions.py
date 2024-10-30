@@ -15,6 +15,7 @@ from rasa_sdk.events import EventType
 import re
 from typing import List
 
+
 # Initialize Firebase
 cred = credentials.Certificate("fertilisense-f1335-firebase-adminsdk-erc4z-f6c9372187.json")
 firebase_admin.initialize_app(cred)
@@ -285,7 +286,6 @@ class ActionVisionSymptom(Action):
         dispatcher.utter_message(response="utter_vision_types")
 
         return []
-
 # Action for Stomach
 class ActionStomachSymptom(Action):
     def name(self) -> Text:
@@ -1514,9 +1514,10 @@ class ActionCollectStartDates(Action):
         return "action_collect_start_dates"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
-        start_date_input = tracker.latest_message.get('text')
+        create_start_date_input = tracker.latest_message.get('text')
+        user_id = tracker.sender_id
         
-        date_match = re.search(r'\d{2}/\d{2}/\d{4}', start_date_input)
+        date_match = re.search(r'\d{2}/\d{2}/\d{4}', create_start_date_input)
         
         if date_match:
             start_date_str = date_match.group()
@@ -1527,9 +1528,29 @@ class ActionCollectStartDates(Action):
                 if start_date > current_date:
                     dispatcher.utter_message(text=f"The start date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid start date.")
                     return []
+                
+                # Fetch existing logs
+                doc_ref = db.collection('symptom_logs').document(user_id)
+                doc = doc_ref.get()
+                if doc.exists:
+                    historical_logs = doc.to_dict().get('logs', [])
                 else:
-                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}. Please provide the end date (in dd/mm/yyyy).")
-                    return [SlotSet("start_dates", start_date_str)]
+                    historical_logs = []
+                
+                # Check for date overlap in existing logs
+                for log in historical_logs:
+                    existing_start = datetime.strptime(log['start_dates'], '%d/%m/%Y')
+                    existing_end = datetime.strptime(log['end_dates'], '%d/%m/%Y')
+                    
+                    # Check for any overlap with the existing log
+                    if (existing_start <= start_date <= existing_end) or (existing_start <= start_date <= existing_end):
+                        dispatcher.utter_message(
+                            text=f"Your start date overlaps with an existing log from {log['start_dates']} to {log['end_dates']}. Please choose a different date."
+                        )
+                        return []
+
+                dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}. Please provide the end date (in dd/mm/yyyy).")
+                return [SlotSet("start_dates", start_date_str)]
 
             except ValueError:
                 dispatcher.utter_message(text="There was an error processing the date. Please try again.")
@@ -1543,9 +1564,10 @@ class ActionCollectEndDates(Action):
         return "action_collect_end_dates"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
-        end_date_input = tracker.latest_message.get('text')
+        create_end_date_input = tracker.latest_message.get('text')
+        user_id = tracker.sender_id
         
-        date_match = re.search(r'\d{2}/\d{2}/\d{4}', end_date_input)
+        date_match = re.search(r'\d{2}/\d{2}/\d{4}', create_end_date_input)
         
         if date_match:
             end_date_str = date_match.group()
@@ -1556,9 +1578,32 @@ class ActionCollectEndDates(Action):
                 if end_date > current_date:
                     dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
                     return []
+                
+                # Fetch existing logs
+                doc_ref = db.collection('symptom_logs').document(user_id)
+                doc = doc_ref.get()
+                if doc.exists:
+                    historical_logs = doc.to_dict().get('logs', [])
                 else:
-                    dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please describe your symptoms.")
-                    return [SlotSet("end_dates", end_date_str)]
+                    historical_logs = []
+
+                # Check for date overlap with the provided start and end dates
+                start_dates = tracker.get_slot("start_dates")
+                if start_dates:
+                    new_start_date = datetime.strptime(start_dates, '%d/%m/%Y')
+                    for log in historical_logs:
+                        existing_start = datetime.strptime(log['start_dates'], '%d/%m/%Y')
+                        existing_end = datetime.strptime(log['end_dates'], '%d/%m/%Y')
+                        
+                        # Check for any overlap with existing logs
+                        if (new_start_date <= existing_end and end_date >= existing_start):
+                            dispatcher.utter_message(
+                                text=f"Your date range overlaps with an existing log from {log['start_dates']} to {log['end_dates']}. Please choose different dates."
+                            )
+                            return []
+
+                dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please describe your symptoms.")
+                return [SlotSet("end_dates", end_date_str)]
 
             except ValueError:
                 dispatcher.utter_message(text="There was an error processing the date. Please try again.")
@@ -1577,7 +1622,6 @@ class ActionCollectSymptoms(Action):
         dispatcher.utter_message(text=f"Symptoms recorded: {symptoms}.")
         print(f"Collected symptoms: {symptoms}")
         return [SlotSet("symptoms", symptoms)]
-
 
 class ActionCreateLog(Action):
     def name(self) -> str:
@@ -1599,6 +1643,7 @@ class ActionCreateLog(Action):
             doc_ref = db.collection('symptom_logs').document(user_id)
             doc = doc_ref.get()
 
+            # Fetch historical logs
             historical_logs = doc.to_dict().get('logs', []) if doc.exists else []
 
             # Append new log entry
@@ -1608,7 +1653,10 @@ class ActionCreateLog(Action):
                 'symptoms': symptoms
             })
 
-            # Update Firestore with the new log
+            # Sort logs by 'start_dates'
+            historical_logs.sort(key=lambda x: datetime.strptime(x['start_dates'], '%d/%m/%Y'))
+
+            # Update Firestore with the sorted logs
             doc_ref.set({'logs': historical_logs}, merge=True)
             dispatcher.utter_message(text="Your symptoms have been logged successfully.")
 
@@ -1617,7 +1665,6 @@ class ActionCreateLog(Action):
             print(f"ERROR: {e}")
 
         return []
-    
 
 class ActionEvaluateSymptoms(Action):
     def name(self) -> str:
@@ -1684,11 +1731,254 @@ class ActionEvaluateSymptoms(Action):
 
         return []
 
-    
 # Actions for handling delete symptoms
-    
-# Actions for handling update symptoms
+class ActionCollectSymptomsDeleteStartDate(Action):
+    def name(self) -> str:
+        return "action_collect_symptoms_delete_start_date"
 
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        symptom_start_date_input = tracker.latest_message.get('text')
+        
+        date_match = re.search(r'\d{2}/\d{2}/\d{4}', symptom_start_date_input)
+        
+        if date_match:
+            start_date_str = date_match.group()
+            try:
+                symptoms_delete_start_date = datetime.strptime(start_date_str, '%d/%m/%Y')
+                current_date = datetime.now()
+                
+                if symptoms_delete_start_date > current_date:
+                    dispatcher.utter_message(text=f"The start date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid start date.")
+                    return []
+                else:
+                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}. Please provide the end date (in dd/mm/yyyy).")
+                    return [SlotSet("symptoms_delete_start_date", start_date_str)]  # Changed to symptoms_delete_start_date
+
+            except ValueError:
+                dispatcher.utter_message(text="There was an error processing the date. Please try again.")
+                return []
+        else:
+            dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
+            return []
+
+class ActionCollectSymptomsDeleteEndDate(Action):
+    def name(self) -> str:
+        return "action_collect_symptoms_delete_end_date"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        symptom_end_date_input = tracker.latest_message.get('text')
+        
+        date_match = re.search(r'\d{2}/\d{2}/\d{4}', symptom_end_date_input)
+        
+        if date_match:
+            end_date_str = date_match.group()
+            try:
+                symptoms_delete_end_date = datetime.strptime(end_date_str, '%d/%m/%Y')
+                current_date = datetime.now()
+                
+                if symptoms_delete_end_date > current_date:
+                    dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
+                    return []
+                else:
+                    dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please confirm deletion of symptoms.")
+                    return [SlotSet("symptoms_delete_end_date", end_date_str)]  # Changed to symptoms_delete_end_date
+
+            except ValueError:
+                dispatcher.utter_message(text="There was an error processing the date. Please try again.")
+                return []
+        else:
+            dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
+            return []
+
+class ActionDeleteSymptoms(Action):
+    def name(self) -> str:
+        return "action_delete_symptoms"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        start_date_str = tracker.get_slot("symptoms_delete_start_date")
+        end_date_str = tracker.get_slot("symptoms_delete_end_date")
+        user_id = tracker.sender_id  # Get unique user ID
+
+        if not start_date_str or not end_date_str:
+            dispatcher.utter_message(text="Please provide both start and end dates for deletion.")
+            return []
+
+        try:
+            symptoms_delete_start_date = datetime.strptime(start_date_str, '%d/%m/%Y')
+            symptoms_delete_end_date = datetime.strptime(end_date_str, '%d/%m/%Y')
+            current_date = datetime.now()
+
+            # Validate dates
+            if symptoms_delete_start_date > symptoms_delete_end_date:
+                dispatcher.utter_message(text="The start date cannot be after the end date. Please provide valid dates.")
+                return []
+
+            if symptoms_delete_end_date > current_date:
+                dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
+                return []
+
+            # Fetch logs from Firestore within the specified date range
+            doc_ref = db.collection('symptom_logs').document(user_id)
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                dispatcher.utter_message(text="No symptoms were found for the specified date range.")
+                return []
+
+            logs = doc.to_dict().get('logs', [])
+            logs_to_delete = [
+                log for log in logs
+                if symptoms_delete_start_date <= datetime.strptime(log['start_dates'], '%d/%m/%Y') <= symptoms_delete_end_date
+            ]
+
+            if not logs_to_delete:
+                dispatcher.utter_message(text="No symptoms were found for the specified date range.")
+                return []
+
+            # Filter out logs to be deleted and update Firestore
+            updated_logs = [log for log in logs if log not in logs_to_delete]
+            doc_ref.set({'logs': updated_logs}, merge=True)
+
+            dispatcher.utter_message(text=f"Symptoms between {start_date_str} and {end_date_str} have been deleted.")
+            return [SlotSet("symptoms_delete_start_date", None), SlotSet("symptoms_delete_end_date", None)]
+
+        except ValueError:
+            dispatcher.utter_message(text="There was an error processing the dates. Please ensure they are in the format dd/mm/yyyy.")
+            return []
+
+        except Exception as e:
+            dispatcher.utter_message(text="There was an error deleting your symptoms.")
+            print(f"ERROR: {e}")
+            return []
+            
+# Actions for handling update symptoms
+class ActionCollectSymptomsStartDate(Action):
+    def name(self) -> str:
+        return "action_collect_symptoms_start_date"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        update_symptom_start_date_input = tracker.latest_message.get('text')
+        date_match = re.search(r'\d{2}/\d{2}/\d{4}', update_symptom_start_date_input)
+
+        if date_match:
+            start_date_str = date_match.group()
+            try:
+                symptoms_start_date = datetime.strptime(start_date_str, '%d/%m/%Y')
+                current_date = datetime.now()
+
+                if symptoms_start_date > current_date:
+                    dispatcher.utter_message(text=f"The start date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid start date.")
+                    return []
+                else:
+                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}. Please provide the end date (in dd/mm/yyyy).")
+                    return [SlotSet("symptoms_start_date", start_date_str)]
+
+            except ValueError:
+                dispatcher.utter_message(text="There was an error processing the date. Please try again.")
+                return []
+        else:
+            dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
+            return []
+
+class ActionCollectSymptomsEndDate(Action):
+    def name(self) -> str:
+        return "action_collect_symptoms_end_date"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        update_symptom_end_date_input = tracker.latest_message.get('text')
+        date_match = re.search(r'\d{2}/\d{2}/\d{4}', update_symptom_end_date_input)
+
+        if date_match:
+            end_date_str = date_match.group()
+            try:
+                symptoms_end_date = datetime.strptime(end_date_str, '%d/%m/%Y')
+                current_date = datetime.now()
+
+                if symptoms_end_date > current_date:
+                    dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
+                    return []
+                else:
+                    dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please describe your symptoms that you want to update.")
+                    return [SlotSet("symptoms_end_date", end_date_str)]
+
+            except ValueError:
+                dispatcher.utter_message(text="There was an error processing the date. Please try again.")
+                return []
+        else:
+            dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
+            return []
+
+class ActionCollectUpdatedSymptoms(Action):
+    def name(self) -> str:
+        return "action_collect_updated_symptoms"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        new_symptoms = tracker.latest_message.get('text')
+
+        # Debug: Print the new symptoms captured
+        print(f"DEBUG: New Symptoms captured: {new_symptoms}")
+
+        # Save new symptoms in a slot
+        dispatcher.utter_message(text=f"New Symptoms recorded: {new_symptoms}")
+        
+        return [SlotSet("new_symptoms", new_symptoms)]
+
+class ActionUpdateSymptomsLog(Action):
+    def name(self) -> str:
+        return "action_update_symptoms_log"
+
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
+        update_symptom_start_dates = tracker.get_slot("symptoms_start_date")
+        update_symptom_end_dates = tracker.get_slot("symptoms_end_date")
+        new_symptoms = tracker.get_slot("new_symptoms")  # Changed from "symptoms" to "new_symptoms"
+        user_id = tracker.sender_id
+
+        # Parse dates for accurate comparison
+        try:
+            start_date_obj = datetime.strptime(update_symptom_start_dates, "%d/%m/%Y")
+            end_date_obj = datetime.strptime(update_symptom_end_dates, "%d/%m/%Y")
+        except ValueError:
+            dispatcher.utter_message(text="Invalid date format. Please use dd/mm/yyyy.")
+            return []
+
+        try:
+            # Retrieve logs
+            doc_ref = db.collection('symptom_logs').document(user_id)
+            doc = doc_ref.get()
+
+            if not doc.exists:
+                dispatcher.utter_message(text="No log found to update for the given dates.")
+                print(f"DEBUG: No document found for user {user_id}.")
+                return []
+
+            historical_logs = doc.to_dict().get('logs', [])
+            found = False
+
+            # Search for entry within the date range
+            for log in historical_logs:
+                log_start_date = datetime.strptime(log['start_dates'], "%d/%m/%Y")
+                log_end_date = datetime.strptime(log['end_dates'], "%d/%m/%Y")
+
+                if log_start_date == start_date_obj and log_end_date == end_date_obj:
+                    log['symptoms'] = new_symptoms  # Use the correct key for updating symptoms
+                    found = True
+                    print(f"DEBUG: Log entry found and updated with new symptoms: {new_symptoms}")
+                    break
+
+            if found:
+                # Attempt to update the document in Firestore
+                doc_ref.set({'logs': historical_logs}, merge=True)
+                dispatcher.utter_message(text="Your symptoms log has been successfully updated.")
+                print(f"DEBUG: Successfully updated the Firestore document for user {user_id}.")
+            else:
+                dispatcher.utter_message(text="No log found for the specified date range to update.")
+                print(f"DEBUG: No log entry found for the specified dates {update_symptom_start_dates} to {update_symptom_end_dates}.")
+
+        except Exception as e:
+            dispatcher.utter_message(text="There was an error updating your symptoms.")
+            print(f"Update Error: {e}")
+
+        return []
 
 # Actions for handling create menstrual cycle
 class ActionCollectStartDate(Action):
@@ -1740,7 +2030,6 @@ class ActionCollectStartDate(Action):
         else:
             dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
             return []
-
 
 class ActionCollectEndDate(Action):
     def name(self) -> str:
@@ -2279,7 +2568,6 @@ class ActionCollectUpdateStartDate(Action):
         
         return []
 
-
 class ActionFetchMatchingCycle(Action):
     def name(self) -> str:
         return "action_fetch_matching_cycle"
@@ -2332,8 +2620,6 @@ class ActionAskUpdateField(Action):
         # Asking the user which part of the cycle they want to update
         dispatcher.utter_message(text="Which part of the cycle would you like to update? (start date, end date, cycle duration, or period duration)\n\nExample:\nChange the start date:")
         return []
-
-
 
 class ActionUpdateCycleInFirestore(Action):
     def name(self) -> str:
@@ -2453,10 +2739,6 @@ class ActionUpdateCycleInFirestore(Action):
 
         # Update Firestore with the recalculated predictions
         doc_ref.update({'predictions': predictions})
-
-
-
-
 
 class ActionCollectUpdatedValue(Action):
     def name(self) -> str:
