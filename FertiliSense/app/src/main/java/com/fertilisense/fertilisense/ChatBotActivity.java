@@ -52,7 +52,7 @@ public class ChatBotActivity extends AppCompatActivity {
 
     private FirebaseUser currentUser;
 
-    private final String chatUrl = "https://6265-175-176-24-229.ngrok-free.app/webhooks/rest/webhook";
+    private final String chatUrl = "https://cdd4-2001-4452-480-9600-8467-842-3811-aad1.ngrok-free.app/webhooks/rest/webhook";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,8 +86,12 @@ public class ChatBotActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(llm);
 
         // Show the welcome message as soon as the chatbot starts
-        String welcomeMessage = "Welcome to FertiliSense! How can I assist you today?";
-        addToChat(welcomeMessage, Message.SENT_BY_BOT);  // This adds the welcome message as coming from the bot
+        String welcomeMessage = "Welcome to FertiliSense! How can I assist you today?\n\nLog my cycle | Log my symptoms\n\nUpdate my cycle | Update my symptoms\n\nDelete my cycle | Delete my symptoms";
+        String[] messageLines = welcomeMessage.split("\n\n");
+
+        for (String line : messageLines) {
+            addToChat(line, Message.SENT_BY_BOT);
+        }
 
         // Send message button logic
         sendButton.setOnClickListener((v) -> {
