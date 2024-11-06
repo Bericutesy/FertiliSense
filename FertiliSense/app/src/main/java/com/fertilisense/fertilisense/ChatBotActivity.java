@@ -52,7 +52,7 @@ public class ChatBotActivity extends AppCompatActivity {
 
     private FirebaseUser currentUser;
 
-    private final String chatUrl = "https://cdd4-2001-4452-480-9600-8467-842-3811-aad1.ngrok-free.app/webhooks/rest/webhook";
+    private final String chatUrl = "https://e1d6-120-29-98-242.ngrok-free.app/webhooks/rest/webhook";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

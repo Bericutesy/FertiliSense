@@ -111,22 +111,20 @@ nlu:
 
   - intent: log_menstrual_cycle
     examples: |
-      - I want to log my menstrual cycle
-      - I would like to log my period data
-      - Can I log my menstrual cycle?
-      - I need to record my cycle information
-      - log my menstrual cycle
-      - log my cycle
-      - Track my period
-      - Keep a record of my menstrual cycle
-      - Monitor my monthly cycle
-      - Jot down my period details
-      - Record my menstrual days
-      - Keep tabs on my periods
-      - Note my period start and end dates
-      - Follow my monthly flow schedule
-      - Log my period dates
-      - Track when my period starts and stops
+      - log  menstrual cycle
+      - log data
+      - log menstrual cycle?
+      - need record cycle information
+      - log cycle
+      - Track period
+      - record menstrual cycle
+      - Jot down period details
+      - Record menstrual days
+      - Keep tabs periods
+      - Note period start end dates
+      - Follow monthly flow schedule
+      - Log period dates
+      - Track period starts and stops
 
   - intent: inform_start_date
     examples: |
@@ -156,161 +154,113 @@ nlu:
 
   - intent: delete_log_menstrual_cycle
     examples: |
-      - i want to delete my cycle
-      - i want to delete a cycle
-      - Delete my menstrual cycle
-      - delete my cycle
-      - delete a cycle
-      - Delete my cycle
-      - I want to remove a cycle
-      - Remove my menstrual cycle
+      - delete cycles
+      - Delete menstrual cycle
+      - delete cycle
 
   - intent: update_log_menstrual_cycle
     examples: |
-      - I want to update my cycle
-      - update my cycle
-      - Update my cycle
+      - update cycle
+      - Update cycle
       - update a cycle
       - Update a cycle
-      - Can I update my logged cycle?
-      - I need to edit my cycle information
-      - update my menstrual cycle
 
   - intent: inform_update_start_date
     examples: |
-      - I want to update the cycle that started on [11/10/2023](update_start_date)
-      - The cycle that started on [15/09/2023](update_start_date)
-      - It started on [20/08/2023](update_start_date)
+      - update the cycle that started: [11/10/2023](update_start_date)
+      - The cycle that started: [15/09/2023](update_start_date)
+      - It started: [20/08/2023](update_start_date)
       - start date [20/08/2023](update_start_date)
-      - It starts on [13/08/2024](update_start_date)
+      - It starts: [13/08/2024](update_start_date)
 
   - intent: inform_update_field
     examples: |
-      - I want to update the [start date](update_field)
+      - update the [start date](update_field)
       - Change the [end date](update_field)
       - Update the [cycle duration](update_field)
-      - I want to change the [period duration](update_field)
+      - change the [period duration](update_field)
       - Update my [start date](update_field)
-      - Can I change the [end date](update_field)?
-      - I would like to update the [cycle duration](update_field)
+      - update the [cycle duration](update_field)
       - Modify the [period duration](update_field)
-      - I need to update the [start date](update_field)
-      - I want to modify the [end date](update_field)
-      - Please change the [cycle duration](update_field)
 
   - intent: inform_update_value
     examples: |
-      - The new value is [15/10/2023](update_value)
-      - Change it to [20/10/2023](update_value)
+      - The new value [15/10/2023](update_value)
+      - Change it to: [20/10/2023](update_value)
       - Set the start date to [01/11/2023](update_value)
-      - Make the period duration [5 days](update_value)
-      - Update it to [28 days](update_value)
-      - The new end date is [25/10/2023](update_value)
-      - Modify it to [27 days](update_value)
-      - Change the period duration to [6 days](update_value)
-      - Set the cycle duration to [29 days](update_value)
+      - Update period duration: [5 days](update_value)
+      - Update: [28 days](update_value)
+      - The new end date: [25/10/2023](update_value)
+      - Modify [27 days](update_value)
+      - Change the period duration: [6 days](update_value)
+      - Set cycle duration: [29 days](update_value)
 
   - intent: log_symptoms
     examples: |
-      - I want to log my symptoms
-      - Please record my symptoms
-      - Log my health symptoms
-      - I need to update my symptoms log
+      - log symptoms
+      - symptoms log
+
 
   - intent: provide_start_date
     examples: |
-      - My symptoms start date is 15/10/2023
+      - symptoms start date 15/10/2023
       - Start date of symptoms: 12/10/2023
       - Symptoms started on 01/11/2023
-      - The start date is 05/11/2023
-      - Start date: 18/10/2023
-      - My symptoms began on 07/10/2023
-      - Start date of my symptoms is 10/10/2023
-      - The symptoms began on 20/10/2023
-      - My start date for symptoms is 22/10/2023
-      - The beginning date of symptoms: 30/10/2023
 
   - intent: provide_end_date
     examples: |
-      - My symptoms end date is 20/10/2023
+      - symptoms end date  20/10/2023
       - End date of symptoms: 15/10/2023
-      - Symptoms ended on 25/10/2023
-      - The end date is 30/10/2023
-      - End date: 18/10/2023
-      - My symptoms finished on 05/11/2023
-      - End date of my symptoms is 10/11/2023
-      - The symptoms stopped on 23/10/2023
-      - My end date for symptoms is 26/10/2023
-      - The conclusion date of symptoms: 29/10/2023
+      - Symptoms ended: 25/10/2023
+      - end date of symptoms: 15/10/2023
+      - symptoms ended: 25/10/2023
+
   - intent: describe_symptoms
     examples: |
-      - I've got a migraine 
-      - I feel fatigued and have a mild cough
-      - Experiencing chills and body aches
-      - Suffering from dizziness and stomach cramps
-      - I have a stuffy nose and a headache
-      - Feeling nauseous with back pain
-      - I'm experiencing shortness of breath and fatigue
-      - I have a rash and itchy skin
-      - My symptoms include joint pain and fever
-      - I'm feeling weak with chest discomfort
+      - I've got migraine 
+      - I've got cramps
+      - I've got headache
+      - I've got insomia
 
   - intent: update_symptoms_log
     examples: |
-      - Please update my symptoms log
-      - I want to modify my symptoms records for update
-      - Update my symptoms history for symptoms update
+      - Please update symptoms log
+      - Update symptoms
+      - Symptoms update
 
   - intent: provide_symptoms_start_date
     examples: |
-      - The start date for updating symptoms is [05/10/2023](symptoms_start_date)
-      - Update symptoms starting from [10/10/2023](symptoms_start_date)
-      - I want to set the symptoms update start date as [12/10/2023](symptoms_start_date)
-      - Please use [20/10/2023](symptoms_start_date) as the start date for symptom updates
-      - Symptoms update should begin on [25/10/2023](symptoms_start_date)
+      - Start date for updating symptoms: [05/10/2023](symptoms_start_date)
+      - Update symptoms starting: [10/10/2023](symptoms_start_date)
+      - Symptoms update begin: [25/10/2023](symptoms_start_date)
 
   - intent: provide_symptoms_end_date
     examples: |
-      - The end date for updating symptoms is [20/10/2023](symptoms_end_date)
-      - Symptoms update will end on [30/10/2023](symptoms_end_date)
-      - Use [15/11/2023](symptoms_end_date) as the end date for my symptoms update
-      - I want to set the symptoms update end date to [28/10/2023](symptoms_end_date)
-      - Please mark [31/10/2023](symptoms_end_date) as the end date for updating my symptoms
-      - Update symptoms ending from [10/10/2023](symptoms_start_date)
+      - End date for updating symptoms: [20/10/2023](symptoms_end_date)
+      - Symptoms update end: [30/10/2023](symptoms_end_date)
+      - Update symptoms ending: [10/10/2023](symptoms_start_date)
 
   - intent: provide_symptoms
     examples: |
-      - Update my symptoms to include fatigue and irritability
-      - I want to change my symptoms to anxiety and insomnia
-      - Please change my symptoms to include a runny nose and sneezing
-      - Update my symptoms to reflect increased stress and headaches
-      - Change my symptoms to show muscle pain and exhaustion
+      - Update symptoms to include fatigue and irritability
+      - Change symptoms to anxiety and insomnia
+      - Please change symptoms, include runny nose and sneezing
 
   - intent: request_delete_symptoms
     examples: |
-      - I want to delete my symptoms
-      - Remove my symptoms between two dates
       - Delete symptoms log
-      - I need to clear my symptoms from a specific time period
-      - Can you delete my symptoms for a certain period?
-      - Delete symptoms starting from a specific date
+      - Delete symptoms
+      - symptoms delete
+      - delete symptoms
 
   - intent: provide_symptoms_delete_start_date
     examples: |
-      - The start date for symptoms delete is 01/10/2023
-      - Start date for symptoms delete: 15/09/2023
+      - The delete symptoms start date: 01/10/2023
+      - Delete symptoms start date: 20/09/2023
       - 02/08/2023 for symptoms delete
-      - Let's start symptoms delete from 01/01/2024
-      - Starting date for symptoms delete is 25/12/2023
-      - From 10/07/2022 for symptoms delete
-      - Begin symptoms delete from 20/02/2023
 
   - intent: provide_symptoms_delete_end_date
     examples: |
-      - The end date for symptoms delete is 30/10/2023
-      - End date for symptoms delete: 20/09/2023
-      - 05/12/2023 for symptoms delete
-      - Until 15/10/2023 for symptoms delete
-      - Ending date for symptoms delete is 01/11/2023
-      - To 29/10/2023 for symptoms delete
-      - Finish symptoms delete on 30/09/2023
+      - The delete symptoms end date: 30/10/2023
+      - Delete symptoms end date: 20/09/2023
+      - 05/12/2023 symptoms delete

@@ -21,21 +21,21 @@ stories:
       - action: utter_goodbye
 
 # Action for handling mood
-  - story: handle mood unhappy
-    steps:
-      - intent: mood_unhappy
-      - action: utter_ask_mood
-      - intent: affirm
-      - action: utter_inform_mood
-      - intent: mood_answer
-      - action: utter_acknowledge_mood
+  # - story: handle mood unhappy
+  #   steps:
+  #     - intent: mood_unhappy
+  #     - action: utter_ask_mood
+  #     - intent: affirm
+  #     - action: utter_inform_mood
+  #     - intent: mood_answer
+  #     - action: utter_acknowledge_mood
 
-  - story: handle mood unhappy
-    steps:
-      - intent: mood_unhappy
-      - action: utter_ask_mood
-      - intent: deny
-      - action: utter_acknowledge_mood
+  # - story: handle mood unhappy
+  #   steps:
+  #     - intent: mood_unhappy
+  #     - action: utter_ask_mood
+  #     - intent: deny
+  #     - action: utter_acknowledge_mood
 
 # Action for Wikipedia
   - story: handle reproductive health query

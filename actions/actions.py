@@ -166,8 +166,11 @@ class ActionQueryGPT(Action):
         user_query = tracker.latest_message.get('text')
         logger.info(f"User query received: {user_query}")
 
-        # Construct the prompt for GPT
-        prompt = f"User asked: {user_query}\nAnswer them as a helpful assistant."
+        # Construct a concise prompt for GPT
+        prompt = (
+            f"Answer the following question in a complete, concise way without cutting off: {user_query} "
+            "Provide a direct answer that addresses all aspects of the question."
+        )
         logger.info(f"Prompt constructed: {prompt}")
 
         try:
@@ -175,10 +178,10 @@ class ActionQueryGPT(Action):
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "system", "content": "You are a concise and helpful assistant."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=70
+                max_tokens=150  # Increased token limit for more comprehensive answers
             )
 
             # Extract the GPT response
@@ -192,7 +195,7 @@ class ActionQueryGPT(Action):
             # Handle potential errors and provide fallback response
             logger.error(f"Error occurred: {e}")
             dispatcher.utter_message(text="Sorry, I couldn't process your request at the moment. Please try again later.")
-        
+
         return []
 
 # Action for asking user how is their day
@@ -249,7 +252,7 @@ class ActionCollectStartDates(Action):
                         )
                         return []
 
-                dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}. Please provide the end date (in dd/mm/yyyy).")
+                dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}\nPlease provide the start date of your symptoms?\n Example: End date of symptoms: DD/MM/YYYY")
                 return [SlotSet("start_dates", start_date_str)]
 
             except ValueError:
@@ -302,7 +305,7 @@ class ActionCollectEndDates(Action):
                             )
                             return []
 
-                dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please describe your symptoms.")
+                dispatcher.utter_message(text=f"End Date recorded: {end_date_str}.\nPlease describe your symptoms\nExample: I've got migraine")
                 return [SlotSet("end_dates", end_date_str)]
 
             except ValueError:
@@ -370,70 +373,42 @@ class ActionEvaluateSymptoms(Action):
     def name(self) -> str:
         return "action_evaluate_symptoms"
 
-    async def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]):
-        # Retrieve the symptoms from the slot
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
         symptoms = tracker.get_slot("symptoms")
-        user_id = tracker.sender_id
-        logger.info(f"User ID: {user_id} - Symptoms received: {symptoms}")
-
+        
+        # Check if symptoms were collected
         if not symptoms:
-            dispatcher.utter_message(text="I don't have any symptoms to evaluate.")
-            logger.info("No symptoms provided by the user.")
+            dispatcher.utter_message(text="No symptoms logged. Please log symptoms first for evaluation.")
             return []
 
-        # Ensure symptoms are in a readable format if multiple symptoms are provided
-        if isinstance(symptoms, list):
-            symptoms_text = ", ".join(symptoms)  # Join multiple symptoms with commas
-        else:
-            symptoms_text = symptoms  # Handle single symptom as a string
+        # Construct the prompt for GPT, focusing on symptom analysis
+        prompt = (
+            f"Analyze the following symptoms provided by a user:\n{symptoms}\n"
+            "Provide an evaluation based on common health concerns and potential advice. "
+            "Answer as a supportive health assistant."
+        )
 
-        logger.info(f"Formatted symptoms for evaluation: {symptoms_text}")
+        logger.info(f"Prompt for GPT constructed: {prompt}")
 
         try:
-            # Construct the chat message for OpenAI
-            messages = [
-                {"role": "system", "content": "You are an AI health assistant."},
-                {"role": "user", "content": f"I am experiencing the following symptoms: {symptoms_text}. What could be the possible condition?"}
-            ]
-            logger.debug(f"Messages for GPT: {messages}")
-
-            # Call OpenAI Chat Completion API asynchronously
-            response = await openai.ChatCompletion.acreate(
+            # Call OpenAI API with GPT-3.5 or GPT-4 for symptom analysis
+            response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
-                messages=messages,
-                max_tokens=150,
-                n=1,
-                stop=None,
-                temperature=0.7,
+                messages=[
+                    {"role": "system", "content": "You are a knowledgeable health assistant."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=100  # Set tokens based on desired response length
             )
 
-            evaluation = response['choices'][0]['message']['content'].strip()
-            logger.info(f"GPT evaluation received: {evaluation}")
-
-            # Provide the user with the AI evaluation
-            dispatcher.utter_message(text=f"Based on your symptoms, here is a possible evaluation:\n{evaluation}")
-
-            # Log the evaluation for future reference if needed
-            doc_ref = db.collection('symptom_logs').document(user_id)
-            doc = doc_ref.get()
-
-            historical_logs = doc.to_dict().get('logs', []) if doc.exists else []
-            logger.debug(f"Historical logs: {historical_logs}")
-
-            # Add the evaluation to the latest log
-            if historical_logs:
-                historical_logs[-1]['evaluation'] = evaluation
-            else:
-                historical_logs.append({'symptoms': symptoms_text, 'evaluation': evaluation})
-
-            # Update Firestore with the evaluation
-            doc_ref.set({'logs': historical_logs}, merge=True)
-            logger.info("Symptom evaluation successfully logged in Firestore.")
+            # Extract the response and send it to the user
+            result = response['choices'][0]['message']['content'].strip()
+            dispatcher.utter_message(text=f"Symptom evaluation: {result}")
 
         except Exception as e:
-            dispatcher.utter_message(text="There was an error evaluating your symptoms.")
-            logger.error(f"Error during symptom evaluation: {e}")
-
+            logger.error(f"Error in GPT response: {e}")
+            dispatcher.utter_message(text="There was an issue with evaluating your symptoms. Please try again later.")
+        
         return []
 
 # Actions for handling delete symptoms
@@ -444,6 +419,8 @@ class ActionCollectSymptomsDeleteStartDate(Action):
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
         symptom_start_date_input = tracker.latest_message.get('text')
         
+        print(f"[DEBUG] Received start date input: {symptom_start_date_input}")  # Debug statement
+
         date_match = re.search(r'\d{2}/\d{2}/\d{4}', symptom_start_date_input)
         
         if date_match:
@@ -456,8 +433,9 @@ class ActionCollectSymptomsDeleteStartDate(Action):
                     dispatcher.utter_message(text=f"The start date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid start date.")
                     return []
                 else:
-                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}. Please provide the end date (in dd/mm/yyyy).")
-                    return [SlotSet("symptoms_delete_start_date", start_date_str)]  # Changed to symptoms_delete_start_date
+                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}.")
+                    print(f"[DEBUG] Start date slot set: {start_date_str}")  # Debug statement
+                    return [SlotSet("symptoms_delete_start_date", start_date_str)]
 
             except ValueError:
                 dispatcher.utter_message(text="There was an error processing the date. Please try again.")
@@ -472,21 +450,23 @@ class ActionCollectSymptomsDeleteEndDate(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
         symptom_end_date_input = tracker.latest_message.get('text')
-        
         date_match = re.search(r'\d{2}/\d{2}/\d{4}', symptom_end_date_input)
-        
+
         if date_match:
             end_date_str = date_match.group()
             try:
                 symptoms_delete_end_date = datetime.strptime(end_date_str, '%d/%m/%Y')
                 current_date = datetime.now()
-                
+
                 if symptoms_delete_end_date > current_date:
                     dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
                     return []
                 else:
-                    dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please confirm deletion of symptoms.")
-                    return [SlotSet("symptoms_delete_end_date", end_date_str)]  # Changed to symptoms_delete_end_date
+                    dispatcher.utter_message(text=f"End Date recorded: {end_date_str}.")
+                    return [
+                        SlotSet("symptoms_delete_end_date", end_date_str), 
+                        FollowupAction("action_delete_symptoms")
+                    ]
 
             except ValueError:
                 dispatcher.utter_message(text="There was an error processing the date. Please try again.")
@@ -494,6 +474,7 @@ class ActionCollectSymptomsDeleteEndDate(Action):
         else:
             dispatcher.utter_message(text="Invalid date format. Please provide the date in the format dd/mm/yyyy.")
             return []
+
 
 class ActionDeleteSymptoms(Action):
     def name(self) -> str:
@@ -503,6 +484,9 @@ class ActionDeleteSymptoms(Action):
         start_date_str = tracker.get_slot("symptoms_delete_start_date")
         end_date_str = tracker.get_slot("symptoms_delete_end_date")
         user_id = tracker.sender_id  # Get unique user ID
+
+        print(f"[DEBUG] Start date from slot: {start_date_str}")  # Debug statement
+        print(f"[DEBUG] End date from slot: {end_date_str}")  # Debug statement
 
         if not start_date_str or not end_date_str:
             dispatcher.utter_message(text="Please provide both start and end dates for deletion.")
@@ -516,10 +500,12 @@ class ActionDeleteSymptoms(Action):
             # Validate dates
             if symptoms_delete_start_date > symptoms_delete_end_date:
                 dispatcher.utter_message(text="The start date cannot be after the end date. Please provide valid dates.")
+                print("[DEBUG] Start date is after end date.")  # Debug statement
                 return []
 
             if symptoms_delete_end_date > current_date:
                 dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
+                print("[DEBUG] End date is after today's date.")  # Debug statement
                 return []
 
             # Fetch logs from Firestore within the specified date range
@@ -528,9 +514,12 @@ class ActionDeleteSymptoms(Action):
 
             if not doc.exists:
                 dispatcher.utter_message(text="No symptoms were found for the specified date range.")
+                print("[DEBUG] No document found for user.")  # Debug statement
                 return []
 
             logs = doc.to_dict().get('logs', [])
+            print(f"[DEBUG] Retrieved logs: {logs}")  # Debug statement
+
             logs_to_delete = [
                 log for log in logs
                 if symptoms_delete_start_date <= datetime.strptime(log['start_dates'], '%d/%m/%Y') <= symptoms_delete_end_date
@@ -538,6 +527,7 @@ class ActionDeleteSymptoms(Action):
 
             if not logs_to_delete:
                 dispatcher.utter_message(text="No symptoms were found for the specified date range.")
+                print("[DEBUG] No logs found for the specified date range.")  # Debug statement
                 return []
 
             # Filter out logs to be deleted and update Firestore
@@ -545,15 +535,17 @@ class ActionDeleteSymptoms(Action):
             doc_ref.set({'logs': updated_logs}, merge=True)
 
             dispatcher.utter_message(text=f"Symptoms between {start_date_str} and {end_date_str} have been deleted.")
+            print(f"[DEBUG] Symptoms between {start_date_str} and {end_date_str} deleted.")  # Debug statement
             return [SlotSet("symptoms_delete_start_date", None), SlotSet("symptoms_delete_end_date", None)]
 
         except ValueError:
             dispatcher.utter_message(text="There was an error processing the dates. Please ensure they are in the format dd/mm/yyyy.")
+            print("[DEBUG] ValueError when parsing dates.")  # Debug statement
             return []
 
         except Exception as e:
             dispatcher.utter_message(text="There was an error deleting your symptoms.")
-            print(f"ERROR: {e}")
+            print(f"[DEBUG] ERROR: {e}")  # Debug statement
             return []
             
 # Actions for handling update symptoms
@@ -575,7 +567,7 @@ class ActionCollectSymptomsStartDate(Action):
                     dispatcher.utter_message(text=f"The start date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid start date.")
                     return []
                 else:
-                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}. Please provide the end date (in dd/mm/yyyy).")
+                    dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}.")
                     return [SlotSet("symptoms_start_date", start_date_str)]
 
             except ValueError:
@@ -603,7 +595,7 @@ class ActionCollectSymptomsEndDate(Action):
                     dispatcher.utter_message(text=f"The end date cannot be after today ({current_date.strftime('%d/%m/%Y')}). Please provide a valid end date.")
                     return []
                 else:
-                    dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please describe your symptoms that you want to update.")
+                    dispatcher.utter_message(text=f"End Date recorded: {end_date_str}. Now, please describe your symptoms that you want to update.\nExample:\nUpdate symptoms to include fatigue")
                     return [SlotSet("symptoms_end_date", end_date_str)]
 
             except ValueError:
@@ -786,7 +778,7 @@ class ActionCollectEndDate(Action):
                             return []
 
                     # If all checks pass, confirm the end date
-                    dispatcher.utter_message(text=f"End Date recorded: {end_date_input}. How long was your entire cycle (in days)?\n\nExamples: 23 days")
+                    dispatcher.utter_message(text=f"End Date recorded: {end_date_input}. How long is your cycle duration (in days)?\nCycle duration refers to the total time taken to complete one full cycle of a repeating process or event, often measured from the start of the first phase to the end of the last phase.\n\nExamples: 23 days\n\n(If unsure, you can use the standard cycle of 28 days)")
                     return [SlotSet("end_date", end_date_input)]
 
                 else:
@@ -1269,7 +1261,7 @@ class ActionCollectUpdateStartDate(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
         # Prompt user for the start date of the cycle they want to update
-        dispatcher.utter_message(text="Please provide the start date of the cycle you'd like to update.\n\nExample:\nIt Starts on: DD/MM/YYYY")
+        dispatcher.utter_message(text="Please provide the start date of the cycle you'd like to update.\n\nExample:\nIt starts on DD/MM/YYYY")
         
         return []
 
@@ -1323,7 +1315,7 @@ class ActionAskUpdateField(Action):
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[EventType]:
         # Asking the user which part of the cycle they want to update
-        dispatcher.utter_message(text="Which part of the cycle would you like to update? (start date, end date, cycle duration, or period duration)\n\nExample:\nChange the start date:")
+        dispatcher.utter_message(text="Which part of the cycle would you like to update? (start date, end date, cycle duration, or period duration)\n\nExample:\nChange the (start date)")
         return []
 
 class ActionUpdateCycleInFirestore(Action):
@@ -1462,13 +1454,13 @@ class ActionCollectUpdatedValue(Action):
 
         # Provide feedback based on the field the user is updating
         if update_field == "start date":
-            dispatcher.utter_message(text="Please enter the new value for the start date in DD/MM/YYYY format.\n\nExample:\nChange it to: DD/MM/YYYY")
+            dispatcher.utter_message(text="Please enter the new value for the start date in DD/MM/YYYY format.\n\nExample:\nChange it to DD/MM/YYYY")
         elif update_field == "end date":
-            dispatcher.utter_message(text="For end date, please enter in DD/MM/YYYY format.\n\nExample:\nChange it to: DD/MM/YYYY")
+            dispatcher.utter_message(text="For end date, please enter in DD/MM/YYYY format.\n\nExample:\nChange it to DD/MM/YYYY")
         elif update_field == "cycle duration":
-            dispatcher.utter_message(text="For cycle duration, please enter the number of days.\n\nExample:\nChange it to: 29 days")
+            dispatcher.utter_message(text="For cycle duration, please enter the number of days.\n\nExample:\nChange it to (29 days)")
         elif update_field == "period duration":
-            dispatcher.utter_message(text="For period duration, please enter the number of days.\n\nExample:\nChange it to: 4 days")
+            dispatcher.utter_message(text="For period duration, please enter the number of days.\n\nExample:\nChange it to (4 days)")
         else:
             dispatcher.utter_message(text="I didn't recognize the field to update.")
 
