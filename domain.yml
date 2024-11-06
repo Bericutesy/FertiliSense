@@ -213,19 +213,19 @@ responses:
 
 # handling crud of symptoms
   utter_ask_symptom_start_date:
-    - text: "Please provide the start date of your symptoms?\n Example: Start Date: DD/MM/YYYY"
+    - text: "Please provide the start date of your symptoms?\nExample: Start date of symptoms: DD/MM/YYYY"
 
   utter_ask_update_start_date:
-    - text: "Please provide the start date (in dd/mm/yyyy) for update your symptoms."
+    - text: "Please provide the start date for update your symptoms.\nExample: Start date for updating symptoms: DD/MM/YYYY"
 
   utter_ask_update_end_date:
-    - text: "Please provide the end date (in dd/mm/yyyy) for update your symptoms."
+    - text: "Please provide the end date for update your symptoms.\nExample: End date for updating symptoms: DD/MM/YYYY"
   
   utter_ask_delete_start_date:
-    - text: "Please provide the start date (in dd/mm/yyyy) for delete your symptoms."
+    - text: "Please provide the start date for delete your symptoms.\nExample: Delete symptoms start date: DD/MM/YYYY"
 
   utter_ask_delete_end_date:
-    - text: "Please provide the end date (in dd/mm/yyyy) for delete your symptoms."
+    - text: "Please provide the end date for delete your symptoms.\nExample: Delete symptoms start date:: DD/MM/YYYY"
 
 
 session_config:

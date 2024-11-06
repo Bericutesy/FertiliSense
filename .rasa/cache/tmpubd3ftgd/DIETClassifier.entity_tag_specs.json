@@ -1,0 +1,52 @@
+[
+  {
+    "tag_name": "entity",
+    "ids_to_tags": {
+      "1": "B-symptoms_end_date",
+      "2": "I-symptoms_end_date",
+      "3": "L-symptoms_end_date",
+      "4": "U-symptoms_end_date",
+      "5": "B-symptoms_start_date",
+      "6": "I-symptoms_start_date",
+      "7": "L-symptoms_start_date",
+      "8": "U-symptoms_start_date",
+      "9": "B-update_field",
+      "10": "I-update_field",
+      "11": "L-update_field",
+      "12": "U-update_field",
+      "13": "B-update_start_date",
+      "14": "I-update_start_date",
+      "15": "L-update_start_date",
+      "16": "U-update_start_date",
+      "17": "B-update_value",
+      "18": "I-update_value",
+      "19": "L-update_value",
+      "20": "U-update_value",
+      "0": "O"
+    },
+    "tags_to_ids": {
+      "B-symptoms_end_date": 1,
+      "I-symptoms_end_date": 2,
+      "L-symptoms_end_date": 3,
+      "U-symptoms_end_date": 4,
+      "B-symptoms_start_date": 5,
+      "I-symptoms_start_date": 6,
+      "L-symptoms_start_date": 7,
+      "U-symptoms_start_date": 8,
+      "B-update_field": 9,
+      "I-update_field": 10,
+      "L-update_field": 11,
+      "U-update_field": 12,
+      "B-update_start_date": 13,
+      "I-update_start_date": 14,
+      "L-update_start_date": 15,
+      "U-update_start_date": 16,
+      "B-update_value": 17,
+      "I-update_value": 18,
+      "L-update_value": 19,
+      "U-update_value": 20,
+      "O": 0
+    },
+    "num_tags": 21
+  }
+]
