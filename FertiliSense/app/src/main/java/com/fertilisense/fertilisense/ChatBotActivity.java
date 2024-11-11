@@ -52,7 +52,7 @@ public class ChatBotActivity extends AppCompatActivity {
 
     private FirebaseUser currentUser;
 
-    private final String chatUrl = "https://e1d6-120-29-98-242.ngrok-free.app/webhooks/rest/webhook";
+    private final String chatUrl = "https://0a0f-120-29-98-242.ngrok-free.app/webhooks/rest/webhook";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -162,7 +162,7 @@ public class ChatBotActivity extends AppCompatActivity {
             }
         } catch (JSONException e) {
             e.printStackTrace();
-            addResponse("Failed to create JSON payload: " + e.getMessage());
+            addResponse("Failed to load check your internet connectivity. ");
             return;
         }
 
@@ -193,7 +193,7 @@ public class ChatBotActivity extends AppCompatActivity {
 
                         // If response body is null or empty
                         if (responseBody == null || responseBody.isEmpty()) {
-                            addResponse("No valid data received from the server.");
+                            addResponse("Failed to load check your internet connectivity.");
                             return;
                         }
 
@@ -208,20 +208,20 @@ public class ChatBotActivity extends AppCompatActivity {
                                 } else if (item.getImage() != null) {
                                     addResponse(item.getImage());
                                 } else {
-                                    addResponse("Received an empty response.");
+                                    addResponse("Failed to load check your internet connectivity.");
                                 }
                             }
                         } else {
                             Log.d("ChatBotActivity", "Response data is empty or null");
-                            addResponse("No valid data received from the server.");
+                            addResponse("Failed to load check your internet connectivity.");
                         }
                     } catch (Exception e) {
                         Log.e("ChatBotActivity", "Error processing response: " + e.getMessage());
-                        addResponse("Failed to process response due to " + e.getMessage());
+                        addResponse("Failed to load check your internet connectivity. " );
                     }
                 } else {
                     Log.e("ChatBotActivity", "Failed to load response: " + response.message());
-                    addResponse("Failed to load response due to " + response.message());
+                    addResponse("Failed to load check your internet connectivity. " );
                 }
             }
 
