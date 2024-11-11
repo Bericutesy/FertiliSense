@@ -5,6 +5,7 @@ from firebase_admin import credentials, firestore
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet, UserUtteranceReverted
+from rasa_sdk.events import FollowupAction
 import wikipediaapi
 import openai
 import requests
@@ -252,7 +253,7 @@ class ActionCollectStartDates(Action):
                         )
                         return []
 
-                dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}\nPlease provide the start date of your symptoms?\n Example: End date of symptoms: DD/MM/YYYY")
+                dispatcher.utter_message(text=f"Start Date recorded: {start_date_str}\nPlease provide the start date of your symptoms?\nExample: End date of symptoms: DD/MM/YYYY")
                 return [SlotSet("start_dates", start_date_str)]
 
             except ValueError:
@@ -305,7 +306,7 @@ class ActionCollectEndDates(Action):
                             )
                             return []
 
-                dispatcher.utter_message(text=f"End Date recorded: {end_date_str}.\nPlease describe your symptoms\nExample: I've got migraine")
+                dispatcher.utter_message(text=f"End Date recorded: {end_date_str}.\nPlease describe your symptoms\nExample: migraine")
                 return [SlotSet("end_dates", end_date_str)]
 
             except ValueError:

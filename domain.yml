@@ -225,7 +225,7 @@ responses:
     - text: "Please provide the start date for delete your symptoms.\nExample: Delete symptoms start date: DD/MM/YYYY"
 
   utter_ask_delete_end_date:
-    - text: "Please provide the end date for delete your symptoms.\nExample: Delete symptoms start date:: DD/MM/YYYY"
+    - text: "Please provide the end date for delete your symptoms.\nExample: Delete symptoms end date: DD/MM/YYYY"
 
 
 session_config:
