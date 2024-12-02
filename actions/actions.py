@@ -903,27 +903,42 @@ class ActionCreateLogs(Action):
                 'period_duration': period_duration
             })
 
-             # Sort cycles by start date
+            # Sort cycles by start date
             historical_cycles.sort(key=lambda cycle: datetime.strptime(cycle['start_date'], "%d/%m/%Y"))
 
-            # Calculate strong flow durations based on historical data
-            strong_flow_durations = []
+            # List to hold the predictions (both past and future)
+            predictions = []
+
+            # Process historical cycles and predict for past cycles (fertile window, ovulation, etc.)
             for cycle in historical_cycles:
                 cycle_start = datetime.strptime(cycle['start_date'], "%d/%m/%Y")
                 cycle_end = datetime.strptime(cycle['end_date'], "%d/%m/%Y")
-                period_duration_days = (cycle_end - cycle_start).days + 1
+
+                # Ovulation and fertile window calculations for historical cycles
+                ovulation_date_dt = cycle_start + timedelta(days=cycle['cycle_duration'] - 14)
+                ovulation_date = ovulation_date_dt.strftime("%d/%m/%Y")
+                fertile_window_start_dt = ovulation_date_dt - timedelta(days=2)
+                fertile_window_end_dt = ovulation_date_dt + timedelta(days=2)
+                fertile_window_start = fertile_window_start_dt.strftime("%d/%m/%Y")
+                fertile_window_end = fertile_window_end_dt.strftime("%d/%m/%Y")
 
                 # Strong flow calculations: 2nd and 3rd day of the period
-                strong_flow_start = cycle_start + timedelta(days=1)
-                strong_flow_end = cycle_start + timedelta(days=2)
-                strong_flow_duration = (strong_flow_end - strong_flow_start).days + 1
-                strong_flow_durations.append(strong_flow_duration)
+                strong_flow_start_dt = cycle_start + timedelta(days=1)  # 2nd day
+                strong_flow_end_dt = cycle_start + timedelta(days=2)  # 3rd day
+                strong_flow_start = strong_flow_start_dt.strftime("%d/%m/%Y")
+                strong_flow_end = strong_flow_end_dt.strftime("%d/%m/%Y")
 
-            # Average strong flow duration
-            average_strong_flow_duration = sum(strong_flow_durations) / len(strong_flow_durations) if strong_flow_durations else 2
+                predictions.append({
+                    'cycle_start_date': cycle_start.strftime("%d/%m/%Y"),
+                    'cycle_end_date': cycle_end.strftime("%d/%m/%Y"),
+                    'fertile_window_start': fertile_window_start,
+                    'fertile_window_end': fertile_window_end,
+                    'ovulation_date': ovulation_date,
+                    'strong_flow_start': strong_flow_start,
+                    'strong_flow_end': strong_flow_end
+                })
 
-            # Calculate predictions based on historical data
-            predictions = []
+            # Calculate predictions for future cycles (next 12 cycles)
             current_start_date = datetime.strptime(start_dates, "%d/%m/%Y")
 
             # If there are historical cycles, calculate the next cycle predictions
@@ -932,7 +947,7 @@ class ActionCreateLogs(Action):
                 cycle_duration_days = last_cycle['cycle_duration']
                 current_start_date = datetime.strptime(last_cycle['start_date'], "%d/%m/%Y") + timedelta(days=cycle_duration_days)
 
-            for _ in range(4):  # Predict for the next four cycles
+            for _ in range(12):  # Predict for the next 12 cycles (approximately 1 year)
                 cycle_end_date_dt = current_start_date + timedelta(days=period_duration - 1)
                 cycle_end_date = cycle_end_date_dt.strftime("%d/%m/%Y")
                 next_cycle_start_date_dt = current_start_date + timedelta(days=cycle_duration_days)
@@ -970,7 +985,7 @@ class ActionCreateLogs(Action):
                 'predictions': predictions
             }, merge=True)
 
-             # Send a success message
+            # Send a success message
             dispatcher.utter_message(text="Your menstrual cycle information has been logged successfully.")
 
             # Reset slots
@@ -981,6 +996,7 @@ class ActionCreateLogs(Action):
             print(f"ERROR: {e}")
 
         return []
+
     
 class ActionLogMenstrualCycle(Action):
     def name(self) -> str:
@@ -1194,7 +1210,7 @@ class ActionDeleteMenstrualCycle(Action):
             cycle_duration_days = last_cycle['cycle_duration']
             current_start_date = datetime.strptime(last_cycle['start_date'], "%d/%m/%Y") + timedelta(days=cycle_duration_days)
 
-        for _ in range(4):  # Predict for the next four cycles
+        for _ in range(12):  # Predict for the next four cycles
             cycle_end_date_dt = current_start_date + timedelta(days=last_cycle['period_duration'] - 1)
             cycle_end_date = cycle_end_date_dt.strftime("%d/%m/%Y")
             next_cycle_start_date_dt = current_start_date + timedelta(days=cycle_duration_days)
@@ -1403,7 +1419,7 @@ class ActionUpdateCycleInFirestore(Action):
             cycle_duration_days = last_cycle['cycle_duration']
             current_start_date = datetime.strptime(last_cycle['start_date'], "%d/%m/%Y") + timedelta(days=cycle_duration_days)
 
-            for _ in range(4):  # Predict for the next four cycles
+            for _ in range(12):  # Predict for the next four cycles
                 cycle_end_date_dt = current_start_date + timedelta(days=last_cycle['period_duration'] - 1)
                 cycle_end_date = cycle_end_date_dt.strftime("%d/%m/%Y")
                 next_cycle_start_date_dt = current_start_date + timedelta(days=cycle_duration_days)

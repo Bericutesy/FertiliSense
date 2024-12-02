@@ -143,7 +143,6 @@ public class ReportActivity extends AppCompatActivity implements NavigationView.
     }
 
     private void downloadReport() {
-        // Create the PDF document
         PdfDocument pdfDocument = new PdfDocument();
         PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(595, 842, 1).create();
         PdfDocument.Page page = pdfDocument.startPage(pageInfo);
@@ -153,30 +152,20 @@ public class ReportActivity extends AppCompatActivity implements NavigationView.
         paint.setTextSize(12);
         paint.setColor(Color.BLACK);
 
-        // Prepare the report content with improved formatting
         StringBuilder reportContentBuilder = new StringBuilder();
-
-        // Menstrual Cycle Data Section
         reportContentBuilder.append("Menstrual Cycle Data:\n")
-                .append("Start Date: ").append(cyclesInfo.getText().toString()).append("\n") // Add actual data here
-                .append("End Date: \n") // Placeholder, replace with actual data if available
-                .append("Cycle Duration: \n") // Placeholder
-                .append("Period Duration: \n") // Placeholder
-                .append("\n"); // Add spacing
+                .append("Start Date: ").append(cyclesInfo.getText().toString()).append("\n")
+                .append("End Date: \n")
+                .append("Cycle Duration: \n")
+                .append("Period Duration: \n\n")
+                .append("Symptom Data:\n")
+                .append(symptomsInfo.getText().toString()).append("\n\n");
 
-        // Symptom Data Section
-        reportContentBuilder.append("Symptom Data:\n")
-                .append(symptomsInfo.getText().toString()).append("\n") // Symptoms info
-                .append("\n"); // Add spacing
-
-        // Convert StringBuilder to String
         String reportContent = reportContentBuilder.toString();
-
-        // Draw the report content on the canvas with line spacing
-        float yPosition = 25; // Initial y position
+        float yPosition = 25;
         for (String line : reportContent.split("\n")) {
             canvas.drawText(line, 10, yPosition, paint);
-            yPosition += 20; // Increase y position for the next line (add spacing)
+            yPosition += 20;
         }
 
         pdfDocument.finishPage(page);
@@ -193,11 +182,14 @@ public class ReportActivity extends AppCompatActivity implements NavigationView.
             if (task.isSuccessful()) {
                 Toast.makeText(this, "Report saved to Firebase Realtime Database", Toast.LENGTH_SHORT).show();
 
-                // Save the PDF file locally in the Downloads directory
-                File pdfFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "report.pdf");
+                // Save the PDF file locally in the app's external files directory (Scoped Storage)
+                File appDownloadsDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                File pdfFile = new File(appDownloadsDir, "report.pdf");
 
                 try {
-                    pdfDocument.writeTo(new FileOutputStream(pdfFile));
+                    FileOutputStream fileOutputStream = new FileOutputStream(pdfFile);
+                    pdfDocument.writeTo(fileOutputStream);
+                    fileOutputStream.close();
                     Toast.makeText(this, "Successfully Downloaded Report: " + pdfFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -212,6 +204,7 @@ public class ReportActivity extends AppCompatActivity implements NavigationView.
             }
         });
     }
+
 
     // This method should handle the result of the permission request
     @Override
@@ -278,10 +271,10 @@ public class ReportActivity extends AppCompatActivity implements NavigationView.
                                         String startDate = getStringFromObject(cycle.get("start_date"));
 
                                         // Log each cycle's information
-                                        Log.d(TAG, "Cycle Duration: " + cycleDuration);
-                                        Log.d(TAG, "End Date: " + endDate);
-                                        Log.d(TAG, "Period Duration: " + periodDuration);
-                                        Log.d(TAG, "Start Date: " + startDate);
+//                                        Log.d(TAG, "Cycle Duration: " + cycleDuration);
+//                                        Log.d(TAG, "End Date: " + endDate);
+//                                        Log.d(TAG, "Period Duration: " + periodDuration);
+//                                        Log.d(TAG, "Start Date: " + startDate);
 
                                         // Append the information to cyclesInfo in the desired order
                                         cyclesInfo.append("Start Date: ").append(startDate != null ? startDate : "N/A").append("\n")
